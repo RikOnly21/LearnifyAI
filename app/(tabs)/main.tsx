@@ -46,11 +46,7 @@ const categories = [
 ];
 
 export default function App() {
-<<<<<<< HEAD
 	const { isLoaded, signOut, isSignedIn, sessionId } = useAuth();
-=======
-	const { isLoaded, signOut, isSignedIn } = useAuth();
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	const { user } = useUser();
 
 	if (!isLoaded) return null;

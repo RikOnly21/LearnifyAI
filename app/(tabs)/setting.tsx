@@ -8,13 +8,10 @@ export default function App() {
 	const { user } = useUser();
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 	const { isLoaded, userId, sessionId, getToken } = useAuth();
-	const setProfileImage = async (imageUri: string) => {
+
+	const setProfileImage = async (base64: string) => {
 		try {
-			const response = await fetch(imageUri);
-			const blob = await response.blob();
-			console.log(imageUri);
-			// Sử dụng base64 data URL trực tiếp
-			await user?.setProfileImage({ file: blob });
+			await user?.setProfileImage({ file: base64 }).then(() => user.reload());
 		} catch (error) {
 			console.error("Error setting profile image:", error);
 		}
@@ -23,23 +20,32 @@ export default function App() {
 	if (!isLoaded || !userId) {
 		return null;
 	}
+
 	const pickImage = async () => {
-		if (user) {
-			console.log("đã đăng nhập rồi nè má");
-			const result = await ImagePicker.launchImageLibraryAsync({
-				mediaTypes: ImagePicker.MediaTypeOptions.Images,
-				allowsEditing: true,
-				aspect: [1, 1],
-				quality: 0.5,
-				selectionLimit: 1,
-			});
-			if (!result.canceled) {
-				await setProfileImage(result.assets[0].uri);
-			} else {
-				console.log("bị false rồi đm ");
-			}
-		} else {
+		if (!user) {
 			console.log("CHưa đăng nhập");
+			return;
+		}
+
+		console.log("đã đăng nhập rồi nè má");
+		const result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ImagePicker.MediaTypeOptions.Images,
+			allowsEditing: true,
+			aspect: [1, 1],
+			quality: 0.5,
+			selectionLimit: 1,
+			base64: true,
+		});
+
+		if (!result.canceled && result.assets[0].base64) {
+			const base64 = result.assets[0].base64;
+			const mimeType = result.assets[0].mimeType;
+
+			const image = `data:${mimeType};base64,${base64}`;
+
+			await setProfileImage(image);
+		} else {
+			console.log("User canceled");
 		}
 	};
 
@@ -60,7 +66,7 @@ export default function App() {
 				<View style={styles.avatarSection}>
 					<Text style={styles.label}>Ảnh đại diện</Text>
 					<Image
-						source={avatarUrl ? { uri: avatarUrl } : require("@/assets/images/logo.png")}
+						source={user?.hasImage ? { uri: user.imageUrl } : require("@/assets/images/logo.png")}
 						style={styles.avatar}
 					/>
 					<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>

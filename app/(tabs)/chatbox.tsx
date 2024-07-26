@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-<<<<<<< HEAD
 import {
 	StyleSheet,
 	Text,
@@ -36,7 +35,7 @@ export default function App() {
 			const headers = new Headers();
 			headers.set("clerk-user-id", user.id);
 
-			const res = await fetch("http://192.168.1.9:3000/user/messages", { headers });
+			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/messages", { headers });
 			if (!res.ok) throw new Error("Internal server error!");
 
 			return (await res.json()) as Message;
@@ -72,21 +71,6 @@ export default function App() {
 			await query.refetch();
 		},
 	});
-=======
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-
-export default function App() {
-	const [messages, setMessages] = useState([{ id: 1, text: "Chào bạn, tôi là LearnifyAI", sender: "ai" }]);
-	const [inputText, setInputText] = useState("");
-
-	const sendMessage = () => {
-		if (inputText.trim()) {
-			setMessages([...messages, { id: messages.length + 1, text: inputText, sender: "user" }]);
-			setInputText("");
-		}
-	};
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 
 	return (
 		<View style={styles.container}>
@@ -96,7 +80,6 @@ export default function App() {
 				<MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
 			</View>
 
-<<<<<<< HEAD
 			{query.isSuccess && <MessagesView messages={query.data.messages} />}
 
 			<View style={styles.inputContainer}>
@@ -116,43 +99,29 @@ export default function App() {
 const MessagesView = ({ messages }: { messages?: { id: string; content: string; role: "USER" | "AI" }[] }) => {
 	return (
 		<ScrollView style={styles.messagesContainer}>
-			<View style={[styles.messageBubble, styles.aiBubble]}>
+			<View style={[styles.messagesContainer]}>
 				<Image
 					source={{ uri: "https://img.icons8.com/emoji/48/000000/robot-emoji.png" }}
 					style={styles.avatar}
 				/>
 
-				<Text style={styles.messageText}>Chào bạn, tôi là LearnifyAI!!!</Text>
+				<Text style={styles.messageBubbleAI}>Chào bạn, tôi là LearnifyAI!!!</Text>
 			</View>
 
 			{messages &&
 				messages.map((message) => (
 					<View
 						key={message.id}
-						style={[styles.messageBubble, message.role === "AI" ? styles.aiBubble : styles.userBubble]}
+						style={[message.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser]}
 					>
 						{message.role === "AI" && (
-=======
-			<ScrollView style={styles.messagesContainer}>
-				{messages.map((message) => (
-					<View
-						key={message.id}
-						style={[styles.messageBubble, message.sender === "ai" ? styles.aiBubble : styles.userBubble]}
-					>
-						{message.sender === "ai" && (
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 							<Image
 								source={{ uri: "https://img.icons8.com/emoji/48/000000/robot-emoji.png" }}
 								style={styles.avatar}
 							/>
 						)}
-<<<<<<< HEAD
 						<Text style={styles.messageText}>{message.content}</Text>
 						{message.role === "USER" && (
-=======
-						<Text style={styles.messageText}>{message.text}</Text>
-						{message.sender === "user" && (
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 							<Image
 								source={{ uri: "https://img.icons8.com/emoji/48/000000/woman-raising-hand.png" }}
 								style={styles.avatar}
@@ -160,22 +129,9 @@ const MessagesView = ({ messages }: { messages?: { id: string; content: string; 
 						)}
 					</View>
 				))}
-<<<<<<< HEAD
 		</ScrollView>
 	);
 };
-=======
-			</ScrollView>
-			<View style={styles.inputContainer}>
-				<TextInput style={styles.textInput} value={inputText} onChangeText={setInputText} />
-				<TouchableOpacity onPress={sendMessage}>
-					<Ionicons name="send" size={24} color="blue" />
-				</TouchableOpacity>
-			</View>
-		</View>
-	);
-}
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 
 const styles = StyleSheet.create({
 	container: {
@@ -198,20 +154,19 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 10,
 	},
-	messageBubble: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginVertical: 5,
-		padding: 10,
-		borderRadius: 10,
-	},
-	aiBubble: {
+	messageBubbleAI: {
 		alignSelf: "flex-start",
 		backgroundColor: "#d1e7ff",
+		padding: 10,
+		borderRadius: 10,
+		marginBottom: 10,
 	},
-	userBubble: {
+	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#d1e7ff",
+		backgroundColor: "#d3d3d3",
+		padding: 10,
+		borderRadius: 10,
+		marginBottom: 10,
 	},
 	messageText: {
 		fontSize: 16,

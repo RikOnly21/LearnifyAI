@@ -4,11 +4,7 @@
 		"slug": "MyNewProject",
 		"version": "1.0.0",
 		"orientation": "portrait",
-<<<<<<< HEAD
 		"icon": "./assets/images/logo.png",
-=======
-		"icon": "./assets/images/icon.png",
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 		"scheme": "myapp",
 		"userInterfaceStyle": "automatic",
 		"splash": {
@@ -32,11 +28,7 @@
 			"output": "static",
 			"favicon": "./assets/images/favicon.png"
 		},
-<<<<<<< HEAD
 		"plugins": ["expo-router", "@react-native-voice/voice", "expo-image-picker"],
-=======
-		"plugins": ["expo-router", "@react-native-voice/voice"],
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 		"experiments": {
 			"typedRoutes": true
 		},

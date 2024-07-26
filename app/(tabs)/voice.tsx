@@ -15,17 +15,9 @@ interface Mes {
 }
 export default function App() {
 	const [messages, setMessages] = useState<Mes[]>([]);
-<<<<<<< HEAD
 	const [result, setResult] = useState("");
 
 	const [recording, setRecording] = useState(false);
-=======
-
-	const [recording, setRecording] = useState(false);
-
-	const [result, setResult] = useState("");
-
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	const [speaking, setSpeaking] = useState(false);
 
 	//speak
@@ -119,7 +111,7 @@ export default function App() {
 
 	const sendInitialConfiguration = async () => {
 		const configText =
-			"Giả sử bạn là một trợ lý để tôi học tiếng Anh. Bạn có thể dịch nghĩa, cho ví dụ câu, giải thích ngữ pháp,...Bạn có một nguyên tắc nhất định phải tuân theo là các từ tiếng Việt không được nằm trong dấu ngoặc kép và tất cả các từ tiếng Anh phải nằm trong dấu ngoặc kép, các ví dụ bằng tiếng anh cũng phải bỏ vào giấu ngoặc kép, không sử dụng 2 dấu **, đây là 1 đoạn hội thoại.";
+			"Suppose you are a person for me to practice speaking English. Can you answer me personal questions like your name, age, etc. that you make up?";
 		const data = await apiCall(configText);
 		console.log("Cấu hình ban đầu được AI trả về kết quả: ", data);
 	};

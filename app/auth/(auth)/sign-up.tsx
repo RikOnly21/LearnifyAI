@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-<<<<<<< HEAD
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, Button, Image } from "react-native";
 
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
@@ -68,15 +67,6 @@ export default function App() {
 		}
 	}, [startFacebookOAuthFlow]);
 
-=======
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, Button } from "react-native";
-
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
-import { useSignUp } from "@clerk/clerk-expo";
-import { Link, useRouter } from "expo-router";
-
-export default function App() {
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	const { isLoaded, signUp, setActive } = useSignUp();
 	const router = useRouter();
 
@@ -134,7 +124,6 @@ export default function App() {
 			<Text style={styles.title}>Create your account</Text>
 			<Text style={styles.subtitle}>Welcome! Please fill in the details to get started.</Text>
 			<View style={styles.socialButtonsContainer}>
-<<<<<<< HEAD
 				<TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignUp}>
 					<Image source={require("@/assets/images/google-logo.png")} style={styles.socialLogo} />
 				</TouchableOpacity>
@@ -143,15 +132,6 @@ export default function App() {
 				</TouchableOpacity>
 				<TouchableOpacity style={styles.socialButton} onPress={handleGitHubSignUp}>
 					<FontAwesome name="github" size={24} color="black" />
-=======
-				<TouchableOpacity style={styles.socialButton}>
-					<FontAwesome name="google" size={24} color="black" />
-					<Text style={styles.socialButtonText}>Google</Text>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.socialButton}>
-					<FontAwesome name="github" size={24} color="black" />
-					<Text style={styles.socialButtonText}>GitHub</Text>
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 				</TouchableOpacity>
 			</View>
 
@@ -206,11 +186,7 @@ export default function App() {
 						onChangeText={setPassword}
 						secureTextEntry
 					/>
-<<<<<<< HEAD
 					<TouchableOpacity style={styles.continueButton} onPress={onSignUpPress}>
-=======
-					<TouchableOpacity style={styles.continueButton} onPress={onPressVerify}>
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 						<Text style={styles.continueButtonText}>Continue</Text>
 					</TouchableOpacity>
 				</>
@@ -225,11 +201,7 @@ export default function App() {
 						onChangeText={(code) => setCode(code)}
 					/>
 					<TouchableOpacity style={styles.continueButton} onPress={onPressVerify}>
-<<<<<<< HEAD
 						<Text style={styles.continueButtonText}>Continue</Text>
-=======
-						Continue
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 					</TouchableOpacity>
 				</>
 			)}
@@ -255,14 +227,11 @@ const styles = StyleSheet.create({
 		padding: 20,
 		justifyContent: "center",
 	},
-<<<<<<< HEAD
 	socialLogo: {
 		width: 24,
 		height: 24,
 		marginRight: 10,
 	},
-=======
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	logoContainer: {
 		alignItems: "center",
 		marginBottom: 20,
@@ -290,18 +259,10 @@ const styles = StyleSheet.create({
 		borderColor: "gray",
 		borderRadius: 5,
 		padding: 10,
-<<<<<<< HEAD
 		width: "30%",
 		justifyContent: "center",
 	},
 	socialButtonText: {
-=======
-		width: "45%",
-		justifyContent: "center",
-	},
-	socialButtonText: {
-		marginLeft: 10,
->>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 		fontSize: 16,
 	},
 	orText: {
