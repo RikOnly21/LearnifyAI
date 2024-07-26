@@ -5,7 +5,11 @@ import { useAuth, useOAuth } from "@clerk/clerk-expo";
 
 import { FontAwesome } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
+<<<<<<< HEAD
 import { Link, Redirect } from "expo-router";
+=======
+import { Link, Redirect, useRouter } from "expo-router";
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 import * as WebBrowser from "expo-web-browser";
 
 export const useWarmUpBrowser = () => {
@@ -22,17 +26,30 @@ WebBrowser.maybeCompleteAuthSession();
 export default function App() {
 	useWarmUpBrowser();
 
+<<<<<<< HEAD
+=======
+	const router = useRouter();
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	const { isSignedIn } = useAuth();
 	const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
 
 	const handleGoogleLogin = React.useCallback(async () => {
 		try {
+<<<<<<< HEAD
 			const { createdSessionId, setActive, signIn } = await startOAuthFlow({
+=======
+			const { createdSessionId, setActive } = await startOAuthFlow({
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 				redirectUrl: Linking.createURL("/main"),
 			});
 
 			if (createdSessionId) {
 				setActive!({ session: createdSessionId });
+<<<<<<< HEAD
+=======
+			} else {
+				// Use signIn or signUp for next steps such as MFA
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 			}
 		} catch (err) {
 			console.error("OAuth error", err);

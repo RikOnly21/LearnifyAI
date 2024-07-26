@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+<<<<<<< HEAD
 import {
 	StyleSheet,
 	Text,
@@ -71,6 +72,21 @@ export default function App() {
 			await query.refetch();
 		},
 	});
+=======
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+
+export default function App() {
+	const [messages, setMessages] = useState([{ id: 1, text: "Chào bạn, tôi là LearnifyAI", sender: "ai" }]);
+	const [inputText, setInputText] = useState("");
+
+	const sendMessage = () => {
+		if (inputText.trim()) {
+			setMessages([...messages, { id: messages.length + 1, text: inputText, sender: "user" }]);
+			setInputText("");
+		}
+	};
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 
 	return (
 		<View style={styles.container}>
@@ -80,6 +96,7 @@ export default function App() {
 				<MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
 			</View>
 
+<<<<<<< HEAD
 			{query.isSuccess && <MessagesView messages={query.data.messages} />}
 
 			<View style={styles.inputContainer}>
@@ -115,13 +132,27 @@ const MessagesView = ({ messages }: { messages?: { id: string; content: string; 
 						style={[styles.messageBubble, message.role === "AI" ? styles.aiBubble : styles.userBubble]}
 					>
 						{message.role === "AI" && (
+=======
+			<ScrollView style={styles.messagesContainer}>
+				{messages.map((message) => (
+					<View
+						key={message.id}
+						style={[styles.messageBubble, message.sender === "ai" ? styles.aiBubble : styles.userBubble]}
+					>
+						{message.sender === "ai" && (
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 							<Image
 								source={{ uri: "https://img.icons8.com/emoji/48/000000/robot-emoji.png" }}
 								style={styles.avatar}
 							/>
 						)}
+<<<<<<< HEAD
 						<Text style={styles.messageText}>{message.content}</Text>
 						{message.role === "USER" && (
+=======
+						<Text style={styles.messageText}>{message.text}</Text>
+						{message.sender === "user" && (
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 							<Image
 								source={{ uri: "https://img.icons8.com/emoji/48/000000/woman-raising-hand.png" }}
 								style={styles.avatar}
@@ -129,9 +160,22 @@ const MessagesView = ({ messages }: { messages?: { id: string; content: string; 
 						)}
 					</View>
 				))}
+<<<<<<< HEAD
 		</ScrollView>
 	);
 };
+=======
+			</ScrollView>
+			<View style={styles.inputContainer}>
+				<TextInput style={styles.textInput} value={inputText} onChangeText={setInputText} />
+				<TouchableOpacity onPress={sendMessage}>
+					<Ionicons name="send" size={24} color="blue" />
+				</TouchableOpacity>
+			</View>
+		</View>
+	);
+}
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 
 const styles = StyleSheet.create({
 	container: {

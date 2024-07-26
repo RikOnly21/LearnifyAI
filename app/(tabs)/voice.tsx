@@ -15,9 +15,17 @@ interface Mes {
 }
 export default function App() {
 	const [messages, setMessages] = useState<Mes[]>([]);
+<<<<<<< HEAD
 	const [result, setResult] = useState("");
 
 	const [recording, setRecording] = useState(false);
+=======
+
+	const [recording, setRecording] = useState(false);
+
+	const [result, setResult] = useState("");
+
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	const [speaking, setSpeaking] = useState(false);
 
 	//speak

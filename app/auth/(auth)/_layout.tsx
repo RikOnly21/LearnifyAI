@@ -14,6 +14,7 @@ export default function TabLayout() {
 				tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
 				headerShown: false,
 			}}
+<<<<<<< HEAD
 		>
 			<Tabs.Screen
 				name="sign-in"
@@ -35,5 +36,8 @@ export default function TabLayout() {
 				}}
 			/>
 		</Tabs>
+=======
+		></Tabs>
+>>>>>>> 9a256150bd22767a73cd304fcb166f27e014ec60
 	);
 }
