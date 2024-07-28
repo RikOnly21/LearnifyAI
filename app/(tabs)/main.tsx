@@ -8,13 +8,6 @@ import { Button, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacit
 
 const categories = [
 	{
-		title: "Chat với AI",
-		items: [
-			{ title: "Dịch nghĩa", image: require("@/assets/images/translate.png") },
-			{ title: "Hỏi- đáp", image: require("@/assets/images/QNA.png") },
-		],
-	},
-	{
 		title: "Học từ vựng",
 		items: [
 			{ title: "Chủ đề cây cối", image: require("@/assets/images/tree.png") },
@@ -58,11 +51,10 @@ export default function App() {
 				<View style={styles.header}>
 					<Text style={styles.greeting}>Xin chào,</Text>
 					<Text style={styles.name}>{user.username}</Text>
-					<Button title="Signout" onPress={() => signOut({ redirectUrl: "/" })}></Button>
-					<Image
-						source={{ uri: "https://img.icons8.com/emoji/96/000000/man-student.png" }}
-						style={styles.profileImage}
-					/>
+					<TouchableOpacity style={styles.signOutButton} onPress={() => signOut({ redirectUrl: "/" })}>
+						<Text style={styles.signOutButtonText}>SIGN OUT</Text>
+					</TouchableOpacity>
+					<Image source={{ uri: user.imageUrl }} style={styles.profileImage} />
 				</View>
 
 				<View style={styles.searchContainer}>
@@ -70,7 +62,7 @@ export default function App() {
 					<TextInput style={styles.searchInput} placeholder="Search" />
 				</View>
 
-				<Image source={{ uri: "https://img.icons8.com/ios/452/english.png" }} style={styles.bannerImage} />
+				<Image source={require("@/assets/images/english.png")} style={styles.bannerImage} />
 
 				{categories.map((category, index) => (
 					<View key={index} style={styles.categoryContainer}>
@@ -94,6 +86,22 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#f8f8f8",
+	},
+	signOutButton: {
+		backgroundColor: "#007bff", // Màu nền xanh dương
+		borderRadius: 15, // Làm tròn các góc
+		paddingVertical: 10, // Độ dày dọc của nút
+		paddingHorizontal: 30, // Độ dày ngang của nút
+		shadowColor: "#000", // Màu bóng
+		shadowOffset: { width: 0, height: 1 }, // Độ lệch bóng
+		shadowOpacity: 0.2, // Độ mờ của bóng
+		shadowRadius: 1.41, // Bán kính làm mờ bóng
+		elevation: 2, // Độ nổi cho Android
+	},
+	signOutButtonText: {
+		color: "#fff", // Màu chữ trắng
+		fontWeight: "bold", // Độ đậm của chữ
+		textAlign: "center", // Căn giữa chữ trong nút
 	},
 	scrollView: {
 		padding: 20,

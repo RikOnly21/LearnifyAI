@@ -1,19 +1,75 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from "react-native";
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, TextInput } from "react-native";
 import { Ionicons, FontAwesome, FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useUser, useAuth } from "@clerk/clerk-expo";
+import Toast from "react-native-root-toast";
 
 export default function App() {
 	const { user } = useUser();
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 	const { isLoaded, userId, sessionId, getToken } = useAuth();
+	const [firstName, setFirstName] = useState(user?.firstName);
+	const [lastName, setLastName] = useState(user?.lastName);
+	const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumbers || "");
 
 	const setProfileImage = async (base64: string) => {
 		try {
 			await user?.setProfileImage({ file: base64 }).then(() => user.reload());
 		} catch (error) {
 			console.error("Error setting profile image:", error);
+		}
+	};
+
+	// const setFirstname = async (firstName: string) => {
+	// 	try {
+	// 		await user?.update({ firstName: firstName });
+	// 		console.log("lưu đc rồi");
+	// 	} catch (error) {
+	// 		console.error("Error setting username:", error);
+	// 	}
+	// };
+	const updateUser = async () => {
+		if (!firstName || !lastName) return;
+
+		try {
+			console.log(firstName, lastName);
+			await user?.update({ firstName, lastName }).then(() => user.reload());
+		} catch (error) {
+			console.log(new Error(error as string));
+		}
+	};
+	// const setLastname = async (lastName: string) => {
+	// 	try {
+	// 		await user?.update({ lastName });
+	// 	} catch (error) {
+	// 		console.error("Error setting username:", error);
+	// 	}
+	// };
+	const handleSaveChanges = async () => {
+		if (!user) {
+			Toast.show("You're not logged in!!", { duration: 5000 });
+			return;
+		}
+
+		try {
+			//setFirstname(firstName);
+			console.log("firstName : ", firstName);
+			console.log("LastName nè  : ", lastName);
+
+			updateUser();
+
+			//await user?.update({ firstName:firstName, lastName:lastName });
+			// console.log(user?.primaryPhoneNumberId);
+			// if (user?.primaryPhoneNumberId) {
+			// }
+			//await user?.createPhoneNumber({phoneNumber});
+
+			// Thông báo thành công
+			Toast.show("Changes saved successfully!", { duration: 5000 });
+		} catch (error) {
+			console.error("Error saving changes:", error);
+			Toast.show("Failed to save changes.", { duration: 5000 });
 		}
 	};
 
@@ -56,15 +112,13 @@ export default function App() {
 			</TouchableOpacity>
 
 			<View style={styles.header}>
-				<Text style={styles.greeting}>Xin chào,</Text>
-				<Text style={styles.name}>{user?.firstName?.toString() || "Thanh Phú"}</Text>
+				<Text style={styles.greeting}>Xin chào {user?.firstName?.toString() || "Thanh Phú"}</Text>
 			</View>
 
 			<View style={styles.card}>
 				<Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
 
 				<View style={styles.avatarSection}>
-					<Text style={styles.label}>Ảnh đại diện</Text>
 					<Image
 						source={user?.hasImage ? { uri: user.imageUrl } : require("@/assets/images/logo.png")}
 						style={styles.avatar}
@@ -75,17 +129,39 @@ export default function App() {
 				</View>
 
 				<View style={styles.infoSection}>
-					<Text style={styles.label}>Tên người dùng</Text>
-					<Text style={styles.infoText}>{user?.fullName || "Thanh Phú"}</Text>
+					<Text style={styles.label}>Họ</Text>
+
+					<TextInput
+						onChangeText={setFirstName}
+						style={styles.infoText}
+						defaultValue={user?.firstName || "Họ người dùng trống"}
+					/>
+					<Text style={styles.label}>Tên</Text>
+
+					<TextInput
+						onChangeText={setLastName}
+						style={styles.infoText}
+						defaultValue={user?.lastName || "Tên người dùng trống"}
+					/>
 				</View>
 
 				<View style={styles.infoSection}>
 					<Text style={styles.label}>Email</Text>
-					<Text style={styles.infoText}>{user?.emailAddresses.toString() || "thanhphuy12102@gmail.com"}</Text>
+					<Text style={styles.infoText}>{user?.emailAddresses.toString() || "Email trống"}</Text>
 				</View>
-
-				{/* Tài khoản liên kết và các nút điều hướng khác */}
+				<View style={styles.infoSection}>
+					<Text style={styles.label}>Số điện thoại</Text>
+					<TextInput
+						onChangeText={setPhoneNumber}
+						style={styles.infoText}
+						defaultValue={user?.phoneNumbers.toString() || "Chưa có số điện thoại"}
+					/>
+				</View>
 			</View>
+
+			<TouchableOpacity style={styles.changeAvatarButton} onPress={() => updateUser()}>
+				<Text style={styles.changeAvatarButtonText}>Lưu thay đổi</Text>
+			</TouchableOpacity>
 		</ScrollView>
 	);
 }
@@ -143,6 +219,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		paddingHorizontal: 20,
 		borderRadius: 5,
+		marginTop: 10,
 	},
 	changeAvatarButtonText: {
 		color: "#fff",

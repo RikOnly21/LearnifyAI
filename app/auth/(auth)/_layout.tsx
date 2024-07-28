@@ -20,7 +20,7 @@ export default function TabLayout() {
 				options={{
 					title: "Sign In",
 					tabBarIcon: ({ color, focused }) => (
-						<TabBarIcon name={focused ? "home" : "home-outline"} color={color} />
+						<TabBarIcon name={focused ? "log-in" : "log-in-outline"} color={color} />
 					),
 				}}
 			/>
@@ -30,7 +30,7 @@ export default function TabLayout() {
 				options={{
 					title: "Sign Up",
 					tabBarIcon: ({ color, focused }) => (
-						<TabBarIcon name={focused ? "chatbox" : "chatbox-outline"} color={color} />
+						<TabBarIcon name={focused ? "person-add" : "person-add-outline"} color={color} />
 					),
 				}}
 			/>

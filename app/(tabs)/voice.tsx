@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Gif from "react-native-gif";
 import { apiCall } from "../(api)/openAI";
-
+import { PermissionsAndroid } from "react-native";
 import * as Speech from "expo-speech";
 
 interface Mes {
@@ -19,13 +19,43 @@ export default function App() {
 
 	const [recording, setRecording] = useState(false);
 	const [speaking, setSpeaking] = useState(false);
+	const [male, setMale] = useState(false);
 
+	const requestMicrophonePermission = async () => {
+		try {
+			const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+				title: "Microphone Permission",
+				message: "App needs access to your microphone ",
+				buttonNeutral: "Ask Me Later",
+				buttonNegative: "Cancel",
+				buttonPositive: "OK",
+			});
+			if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+				console.log("You can use the microphone");
+			} else {
+				console.log("Microphone permission denied");
+			}
+		} catch (err) {
+			console.warn(err);
+		}
+	};
+
+	const [imageurl, setImageurl] = useState(
+		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988",
+	);
+	const [gifurl, setGifurl] = useState(
+		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057",
+	);
+	const [voiceNow, setVoiceNow] = useState("en-us-x-iob-local");
 	//speak
 	const speak = (text: string, language: string) => {
 		setSpeaking(true);
 		const cleanedText = removePunctuation(text);
-		Speech.speak(cleanedText, {
+		const options = {
+			voice: voiceNow, // Sử dụng giọng đọc đã chọn
+			quality: "Enhanced",
 			language,
+			rate: 0.85,
 
 			onStart: () => {
 				setSpeaking(true); // Khi bắt đầu phát speech, set trạng thái là true
@@ -39,7 +69,28 @@ export default function App() {
 			onError: () => {
 				setSpeaking(false); // Khi có lỗi, cũng set trạng thái là false
 			},
-		});
+		};
+		Speech.speak(cleanedText, options);
+	};
+	const stopSpeaking = () => {
+		Speech.stop();
+		setSpeaking(false);
+	};
+
+	const setGender = () => {
+		if (male) {
+			setImageurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988");
+			setGifurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057");
+			setVoiceNow("en-us-x-iob-local");
+			console.log("Vừa chuyển sang con gái");
+			setMale(false);
+		} else {
+			setImageurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.png?updatedAt=1722067178971");
+			setGifurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.gif?updatedAt=1722069092988");
+			setVoiceNow("en-us-x-iol-local");
+			console.log("Vừa chuyển sang con trai");
+			setMale(true);
+		}
 	};
 
 	//
@@ -62,11 +113,7 @@ export default function App() {
 			timestamp: Date.now(),
 		};
 		setMessages((prevMessages) => [...prevMessages, resMesUser]);
-		const data = await apiCall(
-			"Khi phản hồi: các từ tiếng Việt không được nằm trong dấu ngoặc kép và tất cả các từ tiếng Anh phải nằm trong dấu ngoặc kép, các ví dụ bằng tiếng anh cũng phải bỏ vào giấu ngoặc kép, không sử dụng 2 dấu **, đây là 1 đoạn hội thoại. Đây là câu hỏi: " +
-				text,
-		);
-
+		const data = await apiCall(text);
 		setResult(data);
 		const resMesAI: Mes = {
 			role: "AI",
@@ -82,15 +129,18 @@ export default function App() {
 
 	const startRecording = async () => {
 		setRecording(true);
-
+		await requestMicrophonePermission();
+		console.log("zô recording");
 		try {
-			await Voice.start("vi-VN");
+			await Voice.start("en-US");
+			console.log("Bắt đầu recording");
 		} catch (error) {
 			console.log("error when startRecording :", error);
 		}
 	};
 
 	const stopRecording = async () => {
+		console.log(Voice.isAvailable());
 		try {
 			await Voice.stop();
 			setRecording(false);
@@ -106,7 +156,7 @@ export default function App() {
 		setMessages([]);
 	};
 	const removePunctuation = (text: string): string => {
-		return text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "  ");
+		return text.replace(/[/#!$%\^&\*;:{}=\-_`~()]/g, "  ");
 	};
 
 	const sendInitialConfiguration = async () => {
@@ -114,35 +164,6 @@ export default function App() {
 			"Suppose you are a person for me to practice speaking English. Can you answer me personal questions like your name, age, etc. that you make up?";
 		const data = await apiCall(configText);
 		console.log("Cấu hình ban đầu được AI trả về kết quả: ", data);
-	};
-
-	const splitMessageByLanguage = (message: string): { text: string; language: string }[] => {
-		const segments: { text: string; language: string }[] = [];
-		const regex = /"([^"]+)"|([^"]+)/g;
-		let match;
-
-		while ((match = regex.exec(message)) !== null) {
-			if (match[1]) {
-				// Đoạn tiếng Anh trong dấu ngoặc kép
-				segments.push({ text: match[1], language: "en-US" });
-			}
-			if (match[2]) {
-				// Đoạn tiếng Việt ngoài dấu ngoặc kép
-				const text = match[2].trim();
-				if (text) {
-					segments.push({ text, language: "vi-VN" });
-				}
-			}
-		}
-
-		return segments;
-	};
-
-	const speakMixedLanguageMessage = (message: string): void => {
-		const segments = splitMessageByLanguage(message);
-		for (let segment of segments) {
-			speak(segment.text, segment.language);
-		}
 	};
 
 	useEffect(() => {
@@ -160,30 +181,21 @@ export default function App() {
 	}, []);
 	useEffect(() => {
 		if (result) {
-			speakMixedLanguageMessage(result);
+			speak(result, "en-us");
 		}
 	}, [result]);
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Ionicons name="arrow-back" size={24} color="black" />
-				<View style={styles.headerTitleContainer}>
-					<View>
-						<Text style={styles.headerTitle}>LearnifyAI</Text>
-						<Text style={styles.headerSubtitle}>Đang lắng nghe...</Text>
-					</View>
-				</View>
-				<MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
+				<Text style={styles.headerTitle}>LearnifyAI</Text>
+				{recording && <Text style={styles.headerSubtitle}> Đang lắng nghe...</Text>}
 			</View>
+
 			{speaking ? (
-				<>
-					<Gif source={require("@/assets/gifs/Sofia.gif")} style={{ width: 200, height: 200 }} />
-				</>
+				<Gif source={{ uri: gifurl }} style={{ width: 200, height: 200, alignSelf: "center" }} />
 			) : (
-				<>
-					<Image source={require("@/assets/images/Sofia.png")} style={{ width: 115, height: 115 }} />
-				</>
+				<Image source={{ uri: imageurl }} style={{ width: 200, height: 200, alignSelf: "center" }} />
 			)}
 
 			<ScrollView style={styles.messagesContainer}>
@@ -195,15 +207,17 @@ export default function App() {
 							style={message.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser}
 						>
 							<Text>{message.message}</Text>
-							<TouchableOpacity
-								style={styles.iconButton}
-								onPress={() => speakMixedLanguageMessage(message.message)}
-							>
-								<Image
-									source={require("@/assets/images/speaker.png")}
-									style={{ width: 20, height: 20 }}
-								/>
-							</TouchableOpacity>
+							{message.role === "AI" && (
+								<TouchableOpacity
+									style={styles.iconButton}
+									onPress={() => (speaking ? stopSpeaking() : speak(message.message, "en-us"))}
+								>
+									<Image
+										source={require("@/assets/images/speaker.png")}
+										style={{ width: 20, height: 20 }}
+									/>
+								</TouchableOpacity>
+							)}
 						</View>
 					))}
 
@@ -215,6 +229,9 @@ export default function App() {
 					))} */}
 			</ScrollView>
 			<View style={styles.inputContainer}>
+				<TouchableOpacity style={styles.iconButton} onPress={setGender}>
+					<Image source={require("@/assets/images/convert-icon.png")} style={styles.iconImage} />
+				</TouchableOpacity>
 				{recording ? (
 					<TouchableOpacity style={styles.iconButton} onPress={stopRecording}>
 						<Image source={require("@/assets/images/mic-on.png")} style={styles.iconImage} />
@@ -240,16 +257,16 @@ const styles = StyleSheet.create({
 		backgroundColor: "#f8f8f8",
 	},
 	header: {
-		flexDirection: "row",
+		flexDirection: "column",
 		alignItems: "center",
-		justifyContent: "space-between",
 		padding: 10,
-		backgroundColor: "#fff",
+		backgroundColor: "#ffffff", // white background for the header
 		elevation: 2,
 	},
 	headerTitleContainer: {
-		flexDirection: "row",
-		alignItems: "center",
+		flex: 1,
+		alignItems: "center", // Center title text horizontally
+		justifyContent: "center",
 	},
 	avatar: {
 		width: 24,
@@ -259,10 +276,11 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
+		color: "#000000", // black color for the title
 	},
 	headerSubtitle: {
 		fontSize: 12,
-		color: "gray",
+		color: "#888888", // grey color for the subtitle
 	},
 	messagesContainer: {
 		flex: 1,
@@ -270,26 +288,31 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleAI: {
 		alignSelf: "flex-start",
-		backgroundColor: "#d1e7ff",
+		backgroundColor: "#e0f7fa", // light blue for AI messages
 		padding: 10,
-		borderRadius: 10,
+		borderRadius: 20,
 		marginBottom: 10,
+		maxWidth: "80%",
+		marginLeft: 10,
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#d3d3d3",
+		backgroundColor: "#cfd8dc", // light grey for user messages
 		padding: 10,
-		borderRadius: 10,
+		borderRadius: 20,
 		marginBottom: 10,
+		maxWidth: "80%",
+		marginRight: 10,
 	},
 	messageText: {
 		fontSize: 16,
+		color: "#000000", // black color for message text
 	},
 	inputContainer: {
 		flexDirection: "row",
 		justifyContent: "space-around",
 		padding: 10,
-		backgroundColor: "#333333",
+		backgroundColor: "#072D44",
 		borderTopWidth: 1,
 		borderColor: "#ddd",
 	},

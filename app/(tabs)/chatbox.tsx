@@ -114,19 +114,7 @@ const MessagesView = ({ messages }: { messages?: { id: string; content: string; 
 						key={message.id}
 						style={[message.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser]}
 					>
-						{message.role === "AI" && (
-							<Image
-								source={{ uri: "https://img.icons8.com/emoji/48/000000/robot-emoji.png" }}
-								style={styles.avatar}
-							/>
-						)}
 						<Text style={styles.messageText}>{message.content}</Text>
-						{message.role === "USER" && (
-							<Image
-								source={{ uri: "https://img.icons8.com/emoji/48/000000/woman-raising-hand.png" }}
-								style={styles.avatar}
-							/>
-						)}
 					</View>
 				))}
 		</ScrollView>
@@ -156,17 +144,21 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleAI: {
 		alignSelf: "flex-start",
-		backgroundColor: "#d1e7ff",
+		backgroundColor: "#e0f7fa", // light blue for AI messages
 		padding: 10,
-		borderRadius: 10,
+		borderRadius: 20,
 		marginBottom: 10,
+		maxWidth: "80%",
+		marginLeft: 10,
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#d3d3d3",
+		backgroundColor: "#cfd8dc", // light grey for user messages
 		padding: 10,
-		borderRadius: 10,
+		borderRadius: 20,
 		marginBottom: 10,
+		maxWidth: "80%",
+		marginRight: 10,
 	},
 	messageText: {
 		fontSize: 16,

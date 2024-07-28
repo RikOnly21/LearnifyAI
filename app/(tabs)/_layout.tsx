@@ -39,6 +39,28 @@ export default function TabLayout() {
 					}}
 				/>
 			)}
+			{isSignedIn && (
+				<Tabs.Screen
+					name="voice"
+					options={{
+						title: "Voice",
+						tabBarIcon: ({ color, focused }) => (
+							<TabBarIcon name={focused ? "mic" : "mic-outline"} color={color} />
+						),
+					}}
+				/>
+			)}
+			{isSignedIn && (
+				<Tabs.Screen
+					name="setting"
+					options={{
+						title: "Setting",
+						tabBarIcon: ({ color, focused }) => (
+							<TabBarIcon name={focused ? "settings" : "settings-outline"} color={color} />
+						),
+					}}
+				/>
+			)}
 		</Tabs>
 	);
 }
