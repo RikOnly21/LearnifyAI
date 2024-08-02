@@ -10,7 +10,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native
 import { useEffect } from "react";
 import { Image, Text, View } from "react-native";
 import { RootSiblingParent } from "react-native-root-siblings";
-
+import Gif from "react-native-gif";
 import "expo-dev-client";
 import "react-native-reanimated";
 
@@ -88,7 +88,7 @@ export default function RootLayout() {
 
 						<ClerkLoading>
 							<View>
-								<Image source={require("@/assets/images/splash.png")} />
+								<Gif source={require("@/assets/gifs/loading1-unscreen.gif")}></Gif>
 							</View>
 						</ClerkLoading>
 					</ThemeProvider>

@@ -50,6 +50,7 @@ export default function TabLayout() {
 					}}
 				/>
 			)}
+
 			{isSignedIn && (
 				<Tabs.Screen
 					name="setting"

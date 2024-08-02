@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-	StyleSheet,
-	Text,
-	View,
-	TextInput,
-	TouchableOpacity,
-	ScrollView,
-	Image,
-	ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -75,12 +66,13 @@ export default function App() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.topBar}>
-				<Ionicons name="arrow-back" size={24} color="black" />
+				<Ionicons name="arrow-back" size={24} color="white" />
 				<Text style={styles.title}>Giải đáp cùng AI</Text>
 				<MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
 			</View>
 
 			{query.isSuccess && <MessagesView messages={query.data.messages} />}
+			{query.isLoading && <MessagesView messages={[]} />}
 
 			<View style={styles.inputContainer}>
 				<TextInput style={styles.textInput} value={inputText} onChangeText={setInputText} />

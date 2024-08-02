@@ -1,25 +1,86 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Voice, { SpeechErrorEvent, SpeechResultsEvent } from "@react-native-voice/voice";
+import { useMutation } from "@tanstack/react-query";
 
-import React, { useEffect, useState } from "react";
-import { Button, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Gif from "react-native-gif";
-import { apiCall } from "../(api)/openAI";
-import { PermissionsAndroid } from "react-native";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
 
-interface Mes {
-	role: string;
-	message: string;
-	timestamp: number;
+import React, { useEffect, useState } from "react";
+import { Image, PermissionsAndroid, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Gif from "react-native-gif";
+import Toast from "react-native-root-toast";
+
+interface Message {
+	role: "assistant" | "user";
+	content: string;
 }
+
 export default function App() {
-	const [messages, setMessages] = useState<Mes[]>([]);
-	const [result, setResult] = useState("");
+	const { user } = useUser();
+
+	const [messages, setMessages] = useState<Message[]>([]);
 
 	const [recording, setRecording] = useState(false);
 	const [speaking, setSpeaking] = useState(false);
 	const [male, setMale] = useState(false);
+
+	const [voiceNow, setVoiceNow] = useState("en-us-x-iob-local");
+
+	const [imageurl, setImageurl] = useState(
+		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988",
+	);
+	const [gifurl, setGifurl] = useState(
+		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057",
+	);
+
+	const mutation = useMutation({
+		onError: (error) => Toast.show(error.message, { duration: 5000 }),
+		mutationFn: async (mes: Message[]) => {
+			const body = [
+				{
+					role: "system",
+					content: `Suppose you are a person for me to practice speaking English. Make up your name that for a ${
+						male ? "male" : "female"
+					}!`,
+				},
+				...mes,
+			] as Message[];
+
+			const headers = new Headers();
+			headers.set("clerk-user-id", user!.id);
+			headers.set("Content-Type", "application/json");
+
+			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/voice", {
+				method: "POST",
+				body: JSON.stringify(body),
+				headers,
+			});
+
+			if (!res.ok) throw new Error("Status: " + res.status + " - " + res.statusText);
+
+			const { message } = (await res.json()) as { message: string };
+			setMessages([
+				...messages,
+				{ role: "user", content: mes.at(-1)!.content },
+				{ role: "assistant", content: message },
+			]);
+
+			speak(message, "en-us");
+		},
+	});
+
+	const speechResultsHandler = async (e: SpeechResultsEvent) => {
+		console.log("On Result:", e);
+
+		const content = e.value![0];
+		if (!content) return;
+
+		setMessages((prev) => {
+			const data = [...prev, { content, role: "user" } as const];
+			mutation.mutate(data);
+
+			return data;
+		});
+	};
 
 	const requestMicrophonePermission = async () => {
 		try {
@@ -30,51 +91,46 @@ export default function App() {
 				buttonNegative: "Cancel",
 				buttonPositive: "OK",
 			});
+
 			if (granted === PermissionsAndroid.RESULTS.GRANTED) {
 				console.log("You can use the microphone");
+				return true;
 			} else {
 				console.log("Microphone permission denied");
+				return false;
 			}
 		} catch (err) {
 			console.warn(err);
 		}
+
+		return false;
 	};
 
-	const [imageurl, setImageurl] = useState(
-		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988",
-	);
-	const [gifurl, setGifurl] = useState(
-		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057",
-	);
-	const [voiceNow, setVoiceNow] = useState("en-us-x-iob-local");
 	//speak
 	const speak = (text: string, language: string) => {
 		setSpeaking(true);
 		const cleanedText = removePunctuation(text);
+
 		const options = {
-			voice: voiceNow, // Sử dụng giọng đọc đã chọn
+			voice: voiceNow,
 			quality: "Enhanced",
 			language,
 			rate: 0.85,
 
-			onStart: () => {
-				setSpeaking(true); // Khi bắt đầu phát speech, set trạng thái là true
-			},
-			onDone: () => {
-				setSpeaking(false); // Khi speech hoàn thành, set trạng thái là false
-			},
-			onStopped: () => {
-				setSpeaking(false); // Khi speech bị dừng, set trạng thái là false
-			},
-			onError: () => {
-				setSpeaking(false); // Khi có lỗi, cũng set trạng thái là false
-			},
+			onStart: () => setSpeaking(true),
+			onDone: () => setSpeaking(false),
+			onStopped: () => setSpeaking(false),
+			onError: () => setSpeaking(false),
 		};
+
 		Speech.speak(cleanedText, options);
 	};
+
 	const stopSpeaking = () => {
 		Speech.stop();
+
 		setSpeaking(false);
+		setRecording(false);
 	};
 
 	const setGender = () => {
@@ -103,34 +159,20 @@ export default function App() {
 		console.log("speech end handler");
 	};
 
-	const speechResultsHandler = async (e: SpeechResultsEvent) => {
-		console.log("voice event: ", e);
-		const text = e.value![0];
-		if (!text) return;
-		const resMesUser: Mes = {
-			role: "User",
-			message: text,
-			timestamp: Date.now(),
-		};
-		setMessages((prevMessages) => [...prevMessages, resMesUser]);
-		const data = await apiCall(text);
-		setResult(data);
-		const resMesAI: Mes = {
-			role: "AI",
-			message: data, // Đảm bảo rằng content là một chuỗi
-			timestamp: Date.now(),
-		};
-		setMessages((prevMessages) => [...prevMessages, resMesAI]);
-	};
-
 	const speechErrorHandler = (e: SpeechErrorEvent) => {
 		console.log("speech error handler: ", e);
+		setSpeaking(false);
+		setRecording(false);
 	};
 
 	const startRecording = async () => {
 		setRecording(true);
-		await requestMicrophonePermission();
+
+		const success = await requestMicrophonePermission();
+		if (!success) return;
+
 		console.log("zô recording");
+
 		try {
 			await Voice.start("en-US");
 			console.log("Bắt đầu recording");
@@ -140,50 +182,37 @@ export default function App() {
 	};
 
 	const stopRecording = async () => {
-		console.log(Voice.isAvailable());
+		console.log("isAvailable", await Voice.isAvailable());
+
 		try {
 			await Voice.stop();
 			setRecording(false);
-
-			//fetch response
 		} catch (error) {
 			console.log("error when stopRecording:", error);
 		}
 	};
 
 	const clear = () => {
-		setResult("");
 		setMessages([]);
 	};
+
 	const removePunctuation = (text: string): string => {
 		return text.replace(/[/#!$%\^&\*;:{}=\-_`~()]/g, "  ");
 	};
 
-	const sendInitialConfiguration = async () => {
-		const configText =
-			"Suppose you are a person for me to practice speaking English. Can you answer me personal questions like your name, age, etc. that you make up?";
-		const data = await apiCall(configText);
-		console.log("Cấu hình ban đầu được AI trả về kết quả: ", data);
+	const onSpeechPartialResults = (e: SpeechResultsEvent) => {
+		console.log("onSpeechPartialResults: ", e);
 	};
 
 	useEffect(() => {
-		//voice handler events
 		Voice.onSpeechStart = speechStartHandler;
 		Voice.onSpeechEnd = speechEndHandler;
 		Voice.onSpeechResults = speechResultsHandler;
 		Voice.onSpeechError = speechErrorHandler;
+		Voice.onSpeechPartialResults = onSpeechPartialResults;
 
-		sendInitialConfiguration();
-		return () => {
-			//destroy the voice instance
-			Voice.destroy().then(Voice.removeAllListeners);
-		};
+		return () => void Voice.destroy().then(Voice.removeAllListeners);
 	}, []);
-	useEffect(() => {
-		if (result) {
-			speak(result, "en-us");
-		}
-	}, [result]);
 
 	return (
 		<View style={styles.container}>
@@ -199,27 +228,25 @@ export default function App() {
 			)}
 
 			<ScrollView style={styles.messagesContainer}>
-				{messages
-					.sort((a, b) => a.timestamp - b.timestamp)
-					.map((message, index) => (
-						<View
-							key={index}
-							style={message.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser}
-						>
-							<Text>{message.message}</Text>
-							{message.role === "AI" && (
-								<TouchableOpacity
-									style={styles.iconButton}
-									onPress={() => (speaking ? stopSpeaking() : speak(message.message, "en-us"))}
-								>
-									<Image
-										source={require("@/assets/images/speaker.png")}
-										style={{ width: 20, height: 20 }}
-									/>
-								</TouchableOpacity>
-							)}
-						</View>
-					))}
+				{messages.map((message, index) => (
+					<View
+						key={index}
+						style={message.role === "assistant" ? styles.messageBubbleAI : styles.messageBubbleUser}
+					>
+						<Text>{message.content}</Text>
+						{message.role === "assistant" && (
+							<TouchableOpacity
+								style={styles.iconButton}
+								onPress={() => (speaking ? stopSpeaking() : speak(message.content, "en-us"))}
+							>
+								<Image
+									source={require("@/assets/images/speaker.png")}
+									style={{ width: 20, height: 20 }}
+								/>
+							</TouchableOpacity>
+						)}
+					</View>
+				))}
 
 				{/* {messagesAI.length > 0 &&
 					messagesAI.map((message, index) => (
@@ -232,6 +259,7 @@ export default function App() {
 				<TouchableOpacity style={styles.iconButton} onPress={setGender}>
 					<Image source={require("@/assets/images/convert-icon.png")} style={styles.iconImage} />
 				</TouchableOpacity>
+
 				{recording ? (
 					<TouchableOpacity style={styles.iconButton} onPress={stopRecording}>
 						<Image source={require("@/assets/images/mic-on.png")} style={styles.iconImage} />
@@ -241,6 +269,7 @@ export default function App() {
 						<Image source={require("@/assets/images/mic-off.png")} style={styles.iconImage} />
 					</TouchableOpacity>
 				)}
+
 				{messages.length > 0 && (
 					<TouchableOpacity onPress={clear} style={styles.iconButton}>
 						<Image source={require("@/assets/images/clear-icon.png")} style={styles.iconImage} />
@@ -312,7 +341,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-around",
 		padding: 10,
-		backgroundColor: "#072D44",
+		backgroundColor: "#dbfaf2",
 		borderTopWidth: 1,
 		borderColor: "#ddd",
 	},

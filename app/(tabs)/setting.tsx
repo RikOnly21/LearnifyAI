@@ -21,14 +21,6 @@ export default function App() {
 		}
 	};
 
-	// const setFirstname = async (firstName: string) => {
-	// 	try {
-	// 		await user?.update({ firstName: firstName });
-	// 		console.log("lưu đc rồi");
-	// 	} catch (error) {
-	// 		console.error("Error setting username:", error);
-	// 	}
-	// };
 	const updateUser = async () => {
 		if (!firstName || !lastName) return;
 
@@ -39,13 +31,7 @@ export default function App() {
 			console.log(new Error(error as string));
 		}
 	};
-	// const setLastname = async (lastName: string) => {
-	// 	try {
-	// 		await user?.update({ lastName });
-	// 	} catch (error) {
-	// 		console.error("Error setting username:", error);
-	// 	}
-	// };
+
 	const handleSaveChanges = async () => {
 		if (!user) {
 			Toast.show("You're not logged in!!", { duration: 5000 });
@@ -53,19 +39,7 @@ export default function App() {
 		}
 
 		try {
-			//setFirstname(firstName);
-			console.log("firstName : ", firstName);
-			console.log("LastName nè  : ", lastName);
-
 			updateUser();
-
-			//await user?.update({ firstName:firstName, lastName:lastName });
-			// console.log(user?.primaryPhoneNumberId);
-			// if (user?.primaryPhoneNumberId) {
-			// }
-			//await user?.createPhoneNumber({phoneNumber});
-
-			// Thông báo thành công
 			Toast.show("Changes saved successfully!", { duration: 5000 });
 		} catch (error) {
 			console.error("Error saving changes:", error);
@@ -78,12 +52,8 @@ export default function App() {
 	}
 
 	const pickImage = async () => {
-		if (!user) {
-			console.log("CHưa đăng nhập");
-			return;
-		}
+		if (!user) return;
 
-		console.log("đã đăng nhập rồi nè má");
 		const result = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ImagePicker.MediaTypeOptions.Images,
 			allowsEditing: true,
@@ -107,10 +77,6 @@ export default function App() {
 
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
-			<TouchableOpacity style={styles.backButton}>
-				<Ionicons name="arrow-back" size={24} color="black" />
-			</TouchableOpacity>
-
 			<View style={styles.header}>
 				<Text style={styles.greeting}>Xin chào {user?.firstName?.toString() || "Thanh Phú"}</Text>
 			</View>
@@ -130,25 +96,25 @@ export default function App() {
 
 				<View style={styles.infoSection}>
 					<Text style={styles.label}>Họ</Text>
-
 					<TextInput
 						onChangeText={setFirstName}
 						style={styles.infoText}
-						defaultValue={user?.firstName || "Họ người dùng trống"}
+						defaultValue={user?.firstName || "Trống"}
 					/>
-					<Text style={styles.label}>Tên</Text>
 
+					<Text style={styles.label}>Tên</Text>
 					<TextInput
 						onChangeText={setLastName}
 						style={styles.infoText}
-						defaultValue={user?.lastName || "Tên người dùng trống"}
+						defaultValue={user?.lastName || "Trống"}
 					/>
 				</View>
 
 				<View style={styles.infoSection}>
 					<Text style={styles.label}>Email</Text>
-					<Text style={styles.infoText}>{user?.emailAddresses.toString() || "Email trống"}</Text>
+					<TextInput style={styles.infoText} defaultValue={user?.emailAddresses.toString()} />
 				</View>
+
 				<View style={styles.infoSection}>
 					<Text style={styles.label}>Số điện thoại</Text>
 					<TextInput
@@ -206,13 +172,12 @@ const styles = StyleSheet.create({
 	},
 	avatarSection: {
 		alignItems: "center",
-		marginBottom: 20,
+		marginBottom: 15,
 	},
 	avatar: {
 		width: 100,
 		height: 100,
 		borderRadius: 50,
-		marginBottom: 10,
 	},
 	changeAvatarButton: {
 		backgroundColor: "#007bff",
@@ -228,7 +193,6 @@ const styles = StyleSheet.create({
 	infoSection: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginBottom: 10,
 	},
 	label: {
 		fontWeight: "bold",

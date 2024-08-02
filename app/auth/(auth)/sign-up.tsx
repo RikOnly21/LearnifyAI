@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, Button, Image } from "react-native";
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
-import { useSignUp, useOAuth } from "@clerk/clerk-expo";
+import { useOAuth, useSignUp } from "@clerk/clerk-expo";
+
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 
 export const useWarmUpBrowser = () => {
 	React.useEffect(() => {
