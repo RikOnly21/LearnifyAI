@@ -66,7 +66,7 @@ const App = () => {
 					<Text className="">Loading...</Text>
 				</View>
 			)}
-
+			{query.isError && <Text>Lỗi mẹ rồi</Text>}
 			{query.isSuccess && (
 				<View className="flex-1 gap-6">
 					<TopThree data={query.data.data} />
