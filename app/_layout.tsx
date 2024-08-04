@@ -1,18 +1,21 @@
+import "expo-dev-client";
+import "react-native-reanimated";
+import "./global.css";
+
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+
 import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
 
 import { ClerkLoaded, ClerkLoading, ClerkProvider } from "@clerk/clerk-expo";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useEffect } from "react";
-import { Image, Text, View } from "react-native";
-import { RootSiblingParent } from "react-native-root-siblings";
+import { View } from "react-native";
 import Gif from "react-native-gif";
-import "expo-dev-client";
-import "react-native-reanimated";
+import { RootSiblingParent } from "react-native-root-siblings";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -50,7 +53,9 @@ const tokenCache = {
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 if (!publishableKey) {
-	throw new Error("Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env");
+	throw new Error(
+		"Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env",
+	);
 }
 
 const queryClient = new QueryClient();
@@ -87,7 +92,7 @@ export default function RootLayout() {
 						</ClerkLoaded>
 
 						<ClerkLoading>
-							<View>
+							<View className="flex-1 items-center justify-center bg-white">
 								<Gif source={require("@/assets/gifs/loading1-unscreen.gif")}></Gif>
 							</View>
 						</ClerkLoading>

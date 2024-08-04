@@ -1,14 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, TextInput } from "react-native";
-import { Ionicons, FontAwesome, FontAwesome5 } from "@expo/vector-icons";
+import { useAuth, useUser } from "@clerk/clerk-expo";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useUser, useAuth } from "@clerk/clerk-expo";
+
+import React, { useState } from "react";
+import {
+	Image,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from "react-native";
+import LinearGradient from "react-native-linear-gradient";
 import Toast from "react-native-root-toast";
 
 export default function App() {
 	const { user } = useUser();
+	const { isLoaded, signOut } = useAuth();
+
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-	const { isLoaded, userId, sessionId, getToken } = useAuth();
 	const [firstName, setFirstName] = useState(user?.firstName);
 	const [lastName, setLastName] = useState(user?.lastName);
 	const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumbers || "");
@@ -47,9 +58,7 @@ export default function App() {
 		}
 	};
 
-	if (!isLoaded || !userId) {
-		return null;
-	}
+	if (!isLoaded) return null;
 
 	const pickImage = async () => {
 		if (!user) return;
@@ -78,20 +87,28 @@ export default function App() {
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.greeting}>Xin chào {user?.firstName?.toString() || "Thanh Phú"}</Text>
+				<Text style={styles.greeting}>
+					Xin chào {user?.firstName?.toString() || user?.username}
+				</Text>
 			</View>
 
 			<View style={styles.card}>
 				<Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
 
-				<View style={styles.avatarSection}>
+				<View className="gap-2" style={styles.avatarSection}>
 					<Image
-						source={user?.hasImage ? { uri: user.imageUrl } : require("@/assets/images/logo.png")}
+						source={
+							user?.hasImage
+								? { uri: user.imageUrl }
+								: require("@/assets/images/logo.png")
+						}
 						style={styles.avatar}
 					/>
-					<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
-						<Text style={styles.changeAvatarButtonText}>Thay đổi ảnh đại diện</Text>
-					</TouchableOpacity>
+					<LinearGradient colors={["#42a5f5", "#2196f3"]} style={{ borderRadius: 8 }}>
+						<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
+							<Text style={styles.changeAvatarButtonText}>Thay đổi ảnh đại diện</Text>
+						</TouchableOpacity>
+					</LinearGradient>
 				</View>
 
 				<View style={styles.infoSection}>
@@ -112,7 +129,10 @@ export default function App() {
 
 				<View style={styles.infoSection}>
 					<Text style={styles.label}>Email</Text>
-					<TextInput style={styles.infoText} defaultValue={user?.emailAddresses.toString()} />
+					<TextInput
+						style={styles.infoText}
+						defaultValue={user?.emailAddresses.toString()}
+					/>
 				</View>
 
 				<View style={styles.infoSection}>
@@ -125,20 +145,33 @@ export default function App() {
 				</View>
 			</View>
 
-			<TouchableOpacity style={styles.changeAvatarButton} onPress={() => updateUser()}>
-				<Text style={styles.changeAvatarButtonText}>Lưu thay đổi</Text>
-			</TouchableOpacity>
+			<View style={styles.lastContainer}>
+				<LinearGradient colors={["#66bb6a", "#43a047"]} style={{ borderRadius: 8 }}>
+					<TouchableOpacity style={styles.saveChange} onPress={() => updateUser()}>
+						<Ionicons name="save" size={24} color="white" />
+						<Text style={styles.changeAvatarButtonText}>Lưu thay đổi</Text>
+					</TouchableOpacity>
+				</LinearGradient>
+				<LinearGradient colors={["#ef5350", "#c62828"]} style={{ borderRadius: 8 }}>
+					<TouchableOpacity
+						style={styles.saveChange}
+						onPress={() => signOut({ redirectUrl: "/" })}
+					>
+						<MaterialIcons name="logout" size={24} color="white" />
+						<Text style={styles.changeAvatarButtonText}>Đăng Xuất</Text>
+					</TouchableOpacity>
+				</LinearGradient>
+			</View>
 		</ScrollView>
 	);
 }
 
-// Phần StyleSheet của bạn
-// ...
 const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
 		padding: 20,
 		backgroundColor: "#f8f9fa",
+		gap: 12,
 	},
 	backButton: {
 		alignSelf: "flex-start",
@@ -146,7 +179,6 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		alignItems: "center",
-		marginBottom: 20,
 	},
 	greeting: {
 		fontSize: 18,
@@ -158,7 +190,7 @@ const styles = StyleSheet.create({
 	},
 	card: {
 		backgroundColor: "#fff",
-		borderRadius: 10,
+		borderRadius: 8,
 		padding: 20,
 		shadowColor: "#000",
 		shadowOpacity: 0.1,
@@ -166,9 +198,15 @@ const styles = StyleSheet.create({
 		elevation: 5,
 	},
 	sectionTitle: {
-		fontSize: 18,
+		fontSize: 24,
 		fontWeight: "bold",
 		marginBottom: 10,
+		textAlign: "center",
+	},
+	lastContainer: {
+		width: "100%", // Chiếm toàn bộ chiều rộng
+		flexDirection: "row", // Sắp xếp theo hàng ngang
+		justifyContent: "space-around",
 	},
 	avatarSection: {
 		alignItems: "center",
@@ -179,12 +217,23 @@ const styles = StyleSheet.create({
 		height: 100,
 		borderRadius: 50,
 	},
+	saveChange: {
+		flex: 1, // Chiếm toàn bộ không gian
+		flexDirection: "row", // Sắp xếp theo hàng ngang
+		alignItems: "center", // Căn giữa theo chiều dọc
+		justifyContent: "center", // Căn giữa theo chiều ngang
+		paddingLeft: 16, // Padding trái
+		paddingRight: 16, // Padding phải
+		paddingTop: 8, // Padding trên
+		paddingBottom: 8, // Padding dưới
+		borderRadius: 8, // Độ bo góc
+	},
 	changeAvatarButton: {
-		backgroundColor: "#007bff",
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-		borderRadius: 5,
-		marginTop: 10,
+		borderRadius: 8, // Độ bo góc
+		paddingLeft: 16, // Padding trái
+		paddingRight: 16, // Padding phải
+		paddingTop: 8, // Padding trên
+		paddingBottom: 8,
 	},
 	changeAvatarButtonText: {
 		color: "#fff",

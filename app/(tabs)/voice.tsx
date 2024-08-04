@@ -1,11 +1,21 @@
 import Voice, { SpeechErrorEvent, SpeechResultsEvent } from "@react-native-voice/voice";
 import { useMutation } from "@tanstack/react-query";
 
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
-
+import { Ionicons } from "@expo/vector-icons";
+import { api } from "@/lib/api";
+import LinearGradient from "react-native-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { Image, PermissionsAndroid, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+	Image,
+	PermissionsAndroid,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from "react-native";
 import Gif from "react-native-gif";
 import Toast from "react-native-root-toast";
 
@@ -25,12 +35,10 @@ export default function App() {
 
 	const [voiceNow, setVoiceNow] = useState("en-us-x-iob-local");
 
-	const [imageurl, setImageurl] = useState(
-		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988",
-	);
-	const [gifurl, setGifurl] = useState(
-		"https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057",
-	);
+	const [imageurl, setImageurl] = useState({
+		static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png",
+		animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif",
+	});
 
 	const mutation = useMutation({
 		onError: (error) => Toast.show(error.message, { duration: 5000 }),
@@ -45,19 +53,18 @@ export default function App() {
 				...mes,
 			] as Message[];
 
-			const headers = new Headers();
-			headers.set("clerk-user-id", user!.id);
-			headers.set("Content-Type", "application/json");
-
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/voice", {
-				method: "POST",
-				body: JSON.stringify(body),
-				headers,
+			const res = await api.post("/api/user/voice", JSON.stringify(body), {
+				headers: {
+					"Content-Type": "application/json",
+					"clerk-user-id": user!.id,
+				},
 			});
 
-			if (!res.ok) throw new Error("Status: " + res.status + " - " + res.statusText);
+			if (res.status >= 400) {
+				throw new Error("Status: " + res.status + " - " + res.statusText);
+			}
 
-			const { message } = (await res.json()) as { message: string };
+			const { message } = res.data as { message: string };
 			setMessages([
 				...messages,
 				{ role: "user", content: mes.at(-1)!.content },
@@ -84,13 +91,16 @@ export default function App() {
 
 	const requestMicrophonePermission = async () => {
 		try {
-			const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
-				title: "Microphone Permission",
-				message: "App needs access to your microphone ",
-				buttonNeutral: "Ask Me Later",
-				buttonNegative: "Cancel",
-				buttonPositive: "OK",
-			});
+			const granted = await PermissionsAndroid.request(
+				PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+				{
+					title: "Microphone Permission",
+					message: "App needs access to your microphone ",
+					buttonNeutral: "Ask Me Later",
+					buttonNegative: "Cancel",
+					buttonPositive: "OK",
+				},
+			);
 
 			if (granted === PermissionsAndroid.RESULTS.GRANTED) {
 				console.log("You can use the microphone");
@@ -135,16 +145,20 @@ export default function App() {
 
 	const setGender = () => {
 		if (male) {
-			setImageurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png?updatedAt=1722067178988");
-			setGifurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif?updatedAt=1722069093057");
+			setImageurl({
+				static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png",
+				animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif",
+			});
+
 			setVoiceNow("en-us-x-iob-local");
-			console.log("Vừa chuyển sang con gái");
 			setMale(false);
 		} else {
-			setImageurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.png?updatedAt=1722067178971");
-			setGifurl("https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.gif?updatedAt=1722069092988");
+			setImageurl({
+				static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.png",
+				animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.gif",
+			});
+
 			setVoiceNow("en-us-x-iol-local");
-			console.log("Vừa chuyển sang con trai");
 			setMale(true);
 		}
 	};
@@ -170,12 +184,8 @@ export default function App() {
 
 		const success = await requestMicrophonePermission();
 		if (!success) return;
-
-		console.log("zô recording");
-
 		try {
 			await Voice.start("en-US");
-			console.log("Bắt đầu recording");
 		} catch (error) {
 			console.log("error when startRecording :", error);
 		}
@@ -222,22 +232,34 @@ export default function App() {
 			</View>
 
 			{speaking ? (
-				<Gif source={{ uri: gifurl }} style={{ width: 200, height: 200, alignSelf: "center" }} />
+				<Gif
+					source={{ uri: imageurl.animate }}
+					style={{ width: 200, height: 200, alignSelf: "center" }}
+				/>
 			) : (
-				<Image source={{ uri: imageurl }} style={{ width: 200, height: 200, alignSelf: "center" }} />
+				<Image
+					source={{ uri: imageurl.static }}
+					style={{ width: 200, height: 200, alignSelf: "center" }}
+				/>
 			)}
 
 			<ScrollView style={styles.messagesContainer}>
 				{messages.map((message, index) => (
 					<View
 						key={index}
-						style={message.role === "assistant" ? styles.messageBubbleAI : styles.messageBubbleUser}
+						style={
+							message.role === "assistant"
+								? styles.messageBubbleAI
+								: styles.messageBubbleUser
+						}
 					>
 						<Text>{message.content}</Text>
 						{message.role === "assistant" && (
 							<TouchableOpacity
 								style={styles.iconButton}
-								onPress={() => (speaking ? stopSpeaking() : speak(message.content, "en-us"))}
+								onPress={() =>
+									speaking ? stopSpeaking() : speak(message.content, "en-us")
+								}
 							>
 								<Image
 									source={require("@/assets/images/speaker.png")}
@@ -247,35 +269,28 @@ export default function App() {
 						)}
 					</View>
 				))}
-
-				{/* {messagesAI.length > 0 &&
-					messagesAI.map((message, index) => (
-						<Text key={index}>
-							<Text key={index}>{message.message}</Text>
-						</Text>
-					))} */}
 			</ScrollView>
-			<View style={styles.inputContainer}>
+			<LinearGradient style={styles.inputContainer} colors={["#e0f7fa", "#b2ebf2"]}>
 				<TouchableOpacity style={styles.iconButton} onPress={setGender}>
-					<Image source={require("@/assets/images/convert-icon.png")} style={styles.iconImage} />
+					<Ionicons name="swap-horizontal-sharp" size={24} color="#00796b"></Ionicons>
 				</TouchableOpacity>
 
 				{recording ? (
 					<TouchableOpacity style={styles.iconButton} onPress={stopRecording}>
-						<Image source={require("@/assets/images/mic-on.png")} style={styles.iconImage} />
+						<Ionicons name="mic" size={24} color="#0288d1"></Ionicons>
 					</TouchableOpacity>
 				) : (
 					<TouchableOpacity style={styles.iconButton} onPress={startRecording}>
-						<Image source={require("@/assets/images/mic-off.png")} style={styles.iconImage} />
+						<Ionicons name="mic-off" size={24} color="#0288d1"></Ionicons>
 					</TouchableOpacity>
 				)}
 
 				{messages.length > 0 && (
 					<TouchableOpacity onPress={clear} style={styles.iconButton}>
-						<Image source={require("@/assets/images/clear-icon.png")} style={styles.iconImage} />
+						<Ionicons name="trash-bin" size={24} color="#d32f2f"></Ionicons>
 					</TouchableOpacity>
 				)}
-			</View>
+			</LinearGradient>
 		</View>
 	);
 }
@@ -289,12 +304,12 @@ const styles = StyleSheet.create({
 		flexDirection: "column",
 		alignItems: "center",
 		padding: 10,
-		backgroundColor: "#ffffff", // white background for the header
+		backgroundColor: "#ffffff",
 		elevation: 2,
 	},
 	headerTitleContainer: {
 		flex: 1,
-		alignItems: "center", // Center title text horizontally
+		alignItems: "center",
 		justifyContent: "center",
 	},
 	avatar: {
@@ -305,11 +320,11 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
-		color: "#000000", // black color for the title
+		color: "#000000",
 	},
 	headerSubtitle: {
 		fontSize: 12,
-		color: "#888888", // grey color for the subtitle
+		color: "#888888",
 	},
 	messagesContainer: {
 		flex: 1,
@@ -317,7 +332,7 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleAI: {
 		alignSelf: "flex-start",
-		backgroundColor: "#e0f7fa", // light blue for AI messages
+		backgroundColor: "#B3E5FC",
 		padding: 10,
 		borderRadius: 20,
 		marginBottom: 10,
@@ -326,7 +341,7 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#cfd8dc", // light grey for user messages
+		backgroundColor: "#E0F2F1",
 		padding: 10,
 		borderRadius: 20,
 		marginBottom: 10,
@@ -335,7 +350,7 @@ const styles = StyleSheet.create({
 	},
 	messageText: {
 		fontSize: 16,
-		color: "#000000", // black color for message text
+		color: "#000000",
 	},
 	inputContainer: {
 		flexDirection: "row",

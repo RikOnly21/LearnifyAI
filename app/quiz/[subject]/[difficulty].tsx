@@ -1,12 +1,20 @@
 import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
-import { GestureResponderEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import React, { useState } from "react";
+import {
+	GestureResponderEvent,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from "react-native";
 import Gif from "react-native-gif";
+
+import { api } from "@/lib/api";
 
 const QuizScreen = () => {
 	const { subject, difficulty } = useLocalSearchParams();
@@ -15,15 +23,15 @@ const QuizScreen = () => {
 	const { user } = useUser();
 	const [current, setCurrent] = useState(0);
 	const [points, setPoints] = useState(0);
-	const [happy, setHappy] = useState(0);
-
+	const [happy, setHappy] = useState(3);
+	const [position, setPosition] = useState<number>(0.1);
 	const [incorrectOption, setIncorrect] = useState<string[]>([]);
 	const [correct, setCorrect] = useState<string | undefined>(undefined);
 
 	const [duration, setDuration] = useState<number | undefined>();
 
 	const query = useQuery({
-		queryKey: ["user", user?.id, "quiz", subject, difficulty],
+		queryKey: [user?.id, "quiz", subject, difficulty],
 		queryFn: async () => {
 			if (!user?.id) throw new Error("No user id");
 
@@ -33,21 +41,16 @@ const QuizScreen = () => {
 				numOfQuestion: 2,
 			};
 
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/questions/start", {
-				method: "POST",
-				body: JSON.stringify(body),
-				headers: {
-					"Content-Type": "application/json",
-					"clerk-user-id": user?.id,
-				},
+			const res = await api.post("/api/user/questions/start", JSON.stringify(body), {
+				headers: { "Content-Type": "application/json", "clerk-user-id": user.id },
 			});
 
-			if (!res.ok) throw new Error("Internal server error");
+			if (res.status >= 400) throw new Error("Internal server error! Status: " + res.status);
 
 			setIncorrect([]);
 			setCorrect(undefined);
 
-			const { data, questionId } = (await res.json()) as {
+			const { data, questionId } = res.data as {
 				data: { question: string; options: string[]; answer: string }[];
 				questionId: string;
 			};
@@ -56,25 +59,25 @@ const QuizScreen = () => {
 		},
 	});
 
-	const handleAnswer = (event: GestureResponderEvent, option: string) => {
+	const handleAnswer = (_: GestureResponderEvent, option: string) => {
 		if (correct || !query.isSuccess) return;
 
 		const currentQuestion = query.data.data[current];
 
 		if (option === currentQuestion.answer) {
-			setHappy((happy) => Math.max(happy + 1, 3));
+			setHappy((happy) => Math.min(happy + 1, 3));
 			setCorrect(option);
 
 			setPoints((prev) => prev + 1);
 		} else {
-			setHappy((happy) => Math.min(happy - 1, 0));
-
+			setHappy((happy) => Math.max(happy - 1, 1));
 			setIncorrect((prev) => [...prev, option]);
-			setPoints((prev) => Math.min(0, prev - 0.5));
+			setPoints((prev) => Math.max(0, prev - 0.5));
 		}
 	};
 
 	const handleNextQuestion = async () => {
+		setPosition(Math.min(current + 1 / query.data!.data.length, 1) * 100 - 20);
 		setIncorrect([]);
 		setCorrect(undefined);
 
@@ -84,6 +87,7 @@ const QuizScreen = () => {
 
 	const onFinishHandler = async () => {
 		console.log("Ending test");
+		setHappy(4);
 		const body = {
 			questionId: query.data!.questionId,
 			points,
@@ -91,35 +95,39 @@ const QuizScreen = () => {
 			endDate: Date.now(),
 		};
 
-		console.log({ ...body, startDate: new Date(body.startDate), endDate: new Date(body.endDate) });
+		console.log({
+			...body,
+			startDate: new Date(body.startDate),
+			endDate: new Date(body.endDate),
+		});
 
-		const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/questions/end", {
-			method: "POST",
-			body: JSON.stringify(body),
-			// @ts-expect-error
+		const res = await api.post("/api/user/questions/end", JSON.stringify(body), {
 			headers: {
 				"Content-Type": "application/json",
 				"clerk-user-id": user?.id,
 			},
 		});
 
-		const data = (await res.json()) as { duration: number };
+		const data = res.data as { duration: number };
 
 		setDuration(data.duration);
 	};
 
 	if (query.isLoading) {
 		return (
-			<View style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-				<Gif source={require("@/assets/gifs/loading1-unscreen.gif")} style={styles.gif}></Gif>
+			<View className="flex h-full items-center justify-center bg-white">
+				<Gif
+					source={require("@/assets/gifs/loading1-unscreen.gif")}
+					style={styles.gif}
+				></Gif>
 			</View>
 		);
 	}
 
 	if (query.isError) {
 		return (
-			<View style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-				<Text style={{ fontSize: 30 }}>Error</Text>
+			<View className="flex h-full items-center justify-center bg-white">
+				<Text className="text-xl">{query.error.message}</Text>
 			</View>
 		);
 	}
@@ -138,8 +146,16 @@ const QuizScreen = () => {
 
 					<Text> </Text>
 				</View>
+				{happy === 4 ? (
+					<View style={{ paddingLeft: "30%" }}>
+						<AnimationGif happy={happy} />
+					</View>
+				) : (
+					<View style={{ paddingLeft: `${position}%` }}>
+						<AnimationGif happy={happy} />
+					</View>
+				)}
 
-				<AnimationGif happy={happy} />
 				{current < query.data!.data.length && (
 					<>
 						<Text style={styles.question}>
@@ -151,7 +167,9 @@ const QuizScreen = () => {
 								key={index}
 								style={[
 									styles.option,
-									incorrectOption.includes(option) ? { backgroundColor: "#FF4433" } : undefined,
+									incorrectOption.includes(option)
+										? { backgroundColor: "#FF4433" }
+										: undefined,
 									correct === option ? { backgroundColor: "#008000" } : undefined,
 								]}
 								disabled={incorrectOption.includes(option)}
@@ -160,7 +178,9 @@ const QuizScreen = () => {
 								<Text
 									style={[
 										styles.optionText,
-										incorrectOption.includes(option) ? { color: "white" } : undefined,
+										incorrectOption.includes(option)
+											? { color: "white" }
+											: undefined,
 										correct === option ? { color: "white" } : undefined,
 									]}
 								>
@@ -174,7 +194,10 @@ const QuizScreen = () => {
 						</Text>
 
 						{typeof correct === "string" && (
-							<TouchableOpacity style={styles.button} onPress={() => handleNextQuestion()}>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={() => handleNextQuestion()}
+							>
 								<Text style={styles.buttonText}>Tiếp tục</Text>
 							</TouchableOpacity>
 						)}
@@ -199,9 +222,18 @@ const QuizScreen = () => {
 };
 
 const AnimationGif = ({ happy }: { happy: number }) => {
-	if (happy === 1) return <Gif source={require("@/assets/gifs/Alex-happy.gif")} style={styles.walkingGif}></Gif>;
-	if (happy === 2) return <Gif source={require("@/assets/gifs/Alex-happy.gif")} style={styles.walkingGif}></Gif>;
-
+	if (happy === 1)
+		return <Gif source={require("@/assets/gifs/Alex-sad.gif")} style={styles.walkingGif}></Gif>;
+	if (happy === 2)
+		return (
+			<Gif source={require("@/assets/gifs/Alex-normal.gif")} style={styles.walkingGif}></Gif>
+		);
+	if (happy === 3)
+		return (
+			<Gif source={require("@/assets/gifs/Alex-happy.gif")} style={styles.walkingGif}></Gif>
+		);
+	if (happy === 4)
+		return <Gif source={require("@/assets/gifs/Alex-win.gif")} style={styles.walkingGif}></Gif>;
 	return <Gif source={require("@/assets/gifs/Alex-happy.gif")} style={styles.walkingGif}></Gif>;
 };
 
@@ -212,7 +244,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingVertical: 10,
-		backgroundColor: "#ffffff",
+		backgroundColor: "#f8f8f8",
 	},
 	headerTitle: {
 		fontSize: 18,

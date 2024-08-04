@@ -1,74 +1,72 @@
-import TabLayout from "@/app/(tabs)/_layout";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function App() {
 	const { subject } = useLocalSearchParams();
 	const router = useRouter();
 
 	return (
-		<>
-			<View style={styles.container}>
-				<View style={styles.header}>
-					{router.canGoBack() && (
-						<TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-							<Ionicons name="arrow-back" size={24} color="black" />
-						</TouchableOpacity>
-					)}
-					<Text style={styles.title}>Chọn độ khó</Text>
-				</View>
-
-				<View style={styles.buttonContainer}>
-					<TouchableOpacity
-						style={styles.button}
-						onPress={() => router.navigate(`/quiz/${subject}/easy`)}
-						activeOpacity={0.7}
-					>
-						<View style={styles.buttonContent}>
-							<Ionicons name="star" size={24} color="yellow" />
-							<Text style={styles.buttonText}>Easy</Text>
-						</View>
+		<View style={styles.container}>
+			<View className="flex w-full flex-row items-center justify-between p-4">
+				{router.canGoBack() && (
+					<TouchableOpacity onPress={() => router.back()}>
+						<Ionicons name="arrow-back" size={24} color="black" />
 					</TouchableOpacity>
+				)}
 
-					<TouchableOpacity
-						style={styles.button}
-						onPress={() => router.navigate(`/quiz/${subject}/medium`)}
-						activeOpacity={0.7}
-					>
-						<View style={styles.buttonContent}>
-							<Ionicons name="star" size={24} color="yellow" />
-							<Ionicons name="star" size={24} color="yellow" />
-							<Text style={styles.buttonText}>Medium</Text>
-						</View>
-					</TouchableOpacity>
-
-					<TouchableOpacity
-						style={styles.button}
-						onPress={() => router.navigate(`/quiz/${subject}/hard`)}
-						activeOpacity={0.7}
-					>
-						<View style={styles.buttonContent}>
-							<Ionicons name="star" size={24} color="yellow" />
-							<Ionicons name="star" size={24} color="yellow" />
-							<Ionicons name="star" size={24} color="yellow" />
-							<Text style={styles.buttonText}>Hard</Text>
-						</View>
-					</TouchableOpacity>
-
-					<TouchableOpacity
-						style={styles.button}
-						onPress={() => router.navigate(`/quiz/${subject}/leaderboard`)}
-						activeOpacity={0.7}
-					>
-						<View style={styles.buttonContent}>
-							<Text style={styles.buttonText}>Bảng xếp hạng</Text>
-						</View>
-					</TouchableOpacity>
-				</View>
+				<Text className="text-xl font-bold">Chọn độ khó</Text>
+				<View />
 			</View>
-			<TabLayout />
-		</>
+
+			<View style={styles.buttonContainer}>
+				<TouchableOpacity
+					style={styles.button}
+					onPress={() => router.navigate(`/quiz/${subject}/easy`)}
+					activeOpacity={0.7}
+				>
+					<View style={styles.buttonContent}>
+						<Ionicons name="star" size={24} color="yellow" />
+						<Text style={styles.buttonText}>Easy</Text>
+					</View>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={styles.button}
+					onPress={() => router.navigate(`/quiz/${subject}/medium`)}
+					activeOpacity={0.7}
+				>
+					<View style={styles.buttonContent}>
+						<Ionicons name="star" size={24} color="yellow" />
+						<Ionicons name="star" size={24} color="yellow" />
+						<Text style={styles.buttonText}>Medium</Text>
+					</View>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={styles.button}
+					onPress={() => router.navigate(`/quiz/${subject}/hard`)}
+					activeOpacity={0.7}
+				>
+					<View style={styles.buttonContent}>
+						<Ionicons name="star" size={24} color="yellow" />
+						<Ionicons name="star" size={24} color="yellow" />
+						<Ionicons name="star" size={24} color="yellow" />
+						<Text style={styles.buttonText}>Hard</Text>
+					</View>
+				</TouchableOpacity>
+
+				<TouchableOpacity
+					style={styles.button}
+					onPress={() => router.navigate(`/quiz/${subject}/leaderboard`)}
+					activeOpacity={0.7}
+				>
+					<View style={styles.buttonContent}>
+						<Text style={styles.buttonText}>Bảng xếp hạng</Text>
+					</View>
+				</TouchableOpacity>
+			</View>
+		</View>
 	);
 }
 

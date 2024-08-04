@@ -35,7 +35,7 @@ const categories = [
 			},
 			{
 				subject: "custom",
-				title: "Chủ đề bạn muốn là gì?",
+				title: "Bài tập ngẫu nhiên",
 				image: require("@/assets/images/hmm.png"),
 			},
 		],
@@ -60,7 +60,7 @@ const categories = [
 			},
 			{
 				subject: "custom_inquiries",
-				title: "Mẫu câu bạn muốn tìm hiểu là gì?",
+				title: "Bài tập ngẫu nhiên",
 				image: require("@/assets/images/hmm1.png"),
 			},
 		],
@@ -85,7 +85,7 @@ const categories = [
 			},
 			{
 				subject: "custom_exercises",
-				title: "Bạn bài tập gì?",
+				title: "Bài tập ngẫu nhiên",
 				image: require("@/assets/images/hmm2.png"),
 			},
 		],
@@ -93,7 +93,7 @@ const categories = [
 ];
 
 export default function App() {
-	const { isLoaded, signOut, isSignedIn, sessionId } = useAuth();
+	const { isLoaded, isSignedIn } = useAuth();
 	const { user } = useUser();
 	const router = useRouter();
 
@@ -104,14 +104,8 @@ export default function App() {
 		<View style={styles.container}>
 			<ScrollView style={styles.scrollView}>
 				<View style={styles.header}>
-					<View style={styles.profileContainer}>
-						<Image source={{ uri: user.imageUrl }} style={styles.profileImage} />
-						<Text style={styles.name}>{user.username}</Text>
-					</View>
-
-					<TouchableOpacity style={styles.signOutButton} onPress={() => signOut({ redirectUrl: "/" })}>
-						<Image source={require("@/assets/images/logout.png")} style={styles.signOutImage} />
-					</TouchableOpacity>
+					<Text style={styles.name}>Xin chào {user.username} ✋!</Text>
+					<Image source={{ uri: user.imageUrl }} style={styles.profileImage} />
 				</View>
 
 				<Image source={require("@/assets/images/english.png")} style={styles.bannerImage} />
@@ -171,7 +165,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		backgroundColor: "#fff",
-		paddingVertical: 5,
+		paddingBottom: 12,
 	},
 	greeting: {
 		fontSize: 18,
@@ -215,7 +209,7 @@ const styles = StyleSheet.create({
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#DBFAF2",
+		backgroundColor: "#E0F2F1",
 		borderRadius: 10,
 		padding: 10,
 	},

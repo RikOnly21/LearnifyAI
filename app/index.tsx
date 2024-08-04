@@ -1,5 +1,6 @@
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import LinearGradient from "react-native-linear-gradient";
 
 import { useAuth, useOAuth } from "@clerk/clerk-expo";
 
@@ -28,7 +29,7 @@ export default function App() {
 	const handleGoogleLogin = React.useCallback(async () => {
 		try {
 			const { createdSessionId, setActive, signIn } = await startOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
+				redirectUrl: Linking.createURL("/home"),
 			});
 
 			if (createdSessionId) {
@@ -39,7 +40,7 @@ export default function App() {
 		}
 	}, []);
 
-	if (isSignedIn) return <Redirect href="main" />;
+	if (isSignedIn) return <Redirect href="home" />;
 
 	return (
 		<View style={styles.container}>
@@ -57,10 +58,17 @@ export default function App() {
 					</Link>
 				</Text>
 
-				<TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-					<FontAwesome name="google" size={24} color="white" style={styles.googleIcon} />
-					<Text style={styles.googleButtonText}>Đăng nhập bằng Google</Text>
-				</TouchableOpacity>
+				<LinearGradient colors={["#1E90FF", "#00509E"]} style={styles.googleButton}>
+					<TouchableOpacity onPress={handleGoogleLogin} style={{ flexDirection: "row" }}>
+						<FontAwesome
+							name="google"
+							size={24}
+							color="white"
+							style={styles.googleIcon}
+						/>
+						<Text style={styles.googleButtonText}>Đăng nhập bằng Google</Text>
+					</TouchableOpacity>
+				</LinearGradient>
 			</View>
 		</View>
 	);
@@ -103,7 +111,6 @@ const styles = StyleSheet.create({
 	googleButton: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#4285F4",
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 5,

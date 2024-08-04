@@ -1,9 +1,16 @@
-import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-
+import React, { useRef, useState, useEffect } from "react";
+import {
+	StyleSheet,
+	Text,
+	View,
+	TextInput,
+	TouchableOpacity,
+	FlatList,
+	Keyboard,
+	LayoutChangeEvent,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-
 import { useUser } from "@clerk/clerk-expo";
 import Toast from "react-native-root-toast";
 
@@ -14,6 +21,13 @@ type Message = {
 export default function App() {
 	const [inputText, setInputText] = useState("");
 	const { user } = useUser();
+	const flatListRef = useRef<FlatList<{
+		id: string;
+		content: string;
+		role: "USER" | "AI";
+	}> | null>(null);
+	const [listHeight, setListHeight] = useState(0);
+	const [contentHeight, setContentHeight] = useState(0);
 
 	const query = useQuery({
 		queryKey: ["user", "messages"],
@@ -26,7 +40,9 @@ export default function App() {
 			const headers = new Headers();
 			headers.set("clerk-user-id", user.id);
 
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/messages", { headers });
+			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/messages", {
+				headers,
+			});
 			if (!res.ok) throw new Error("Internal server error!");
 
 			return (await res.json()) as Message;
@@ -36,6 +52,7 @@ export default function App() {
 	const sendMessage = useMutation({
 		onSuccess: () => setInputText(""),
 		mutationFn: async () => {
+			Keyboard.dismiss();
 			if (!user) {
 				Toast.show("You're not logged in!!", { duration: 5000 });
 				throw new Error("You're not logged in!!");
@@ -45,42 +62,83 @@ export default function App() {
 			headers.set("clerk-user-id", user.id);
 			headers.set("Content-Type", "application/json");
 
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/messages/create", {
-				headers,
-				method: "POST",
-				body: JSON.stringify([
-					{ content: "Chào bạn, tôi là LearnifyAI!!!", role: "assistant" },
-					...(query.data?.messages || []).map(({ content, role }) => ({
-						content,
-						role: role === "AI" ? "assistant" : "user",
-					})),
-					{ content: inputText, role: "user" },
-				]),
-			});
+			const res = await fetch(
+				"https://learnify-server-ruddy.vercel.app/api/user/messages/create",
+				{
+					headers,
+					method: "POST",
+					body: JSON.stringify([
+						{ content: "Chào bạn, tôi là LearnifyAI!!!", role: "assistant" },
+						...(query.data?.messages || []).map(({ content, role }) => ({
+							content,
+							role: role === "AI" ? "assistant" : "user",
+						})),
+						{ content: inputText, role: "user" },
+					]),
+				},
+			);
 
 			if (!res.ok) throw new Error("Internal server error!");
 			await query.refetch();
+			if (flatListRef.current) {
+				flatListRef.current.scrollToOffset({
+					offset: contentHeight - listHeight,
+					animated: true,
+				});
+			}
 		},
 	});
+
+	useEffect(() => {
+		if (query.data && flatListRef.current) {
+			flatListRef.current.scrollToOffset({
+				offset: contentHeight - listHeight,
+				animated: true,
+			});
+		}
+	}, [query.data, contentHeight, listHeight]);
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.topBar}>
-				<Ionicons name="arrow-back" size={24} color="white" />
 				<Text style={styles.title}>Giải đáp cùng AI</Text>
-				<MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
 			</View>
 
-			{query.isSuccess && <MessagesView messages={query.data.messages} />}
-			{query.isLoading && <MessagesView messages={[]} />}
+			{query.isSuccess && (
+				<MessagesView
+					messages={query.data.messages}
+					ref={flatListRef}
+					onLayout={(event: LayoutChangeEvent) =>
+						setListHeight(event.nativeEvent.layout.height)
+					}
+					onContentSizeChange={(contentWidth: number, contentHeight: number) =>
+						setContentHeight(contentHeight)
+					}
+				/>
+			)}
+			{query.isLoading && (
+				<MessagesView
+					messages={[]}
+					ref={flatListRef}
+					onLayout={(event: LayoutChangeEvent) =>
+						setListHeight(event.nativeEvent.layout.height)
+					}
+					onContentSizeChange={(contentWidth: number, contentHeight: number) =>
+						setContentHeight(contentHeight)
+					}
+				/>
+			)}
 
 			<View style={styles.inputContainer}>
 				<TextInput style={styles.textInput} value={inputText} onChangeText={setInputText} />
-				<TouchableOpacity onPress={() => sendMessage.mutate()} disabled={sendMessage.isPending}>
+				<TouchableOpacity
+					onPress={() => sendMessage.mutate()}
+					disabled={sendMessage.isPending}
+				>
 					{sendMessage.isPending ? (
-						<Ionicons name="stop-circle" size={24} color="black" />
+						<Ionicons name="stop-circle" size={24} color="#D3D3D3" />
 					) : (
-						<Ionicons name="send" size={24} color="blue" />
+						<Ionicons name="send" size={24} color="#1E90FF" />
 					)}
 				</TouchableOpacity>
 			</View>
@@ -88,30 +146,40 @@ export default function App() {
 	);
 }
 
-const MessagesView = ({ messages }: { messages?: { id: string; content: string; role: "USER" | "AI" }[] }) => {
-	return (
-		<ScrollView style={styles.messagesContainer}>
-			<View style={[styles.messagesContainer]}>
-				<Image
-					source={{ uri: "https://img.icons8.com/emoji/48/000000/robot-emoji.png" }}
-					style={styles.avatar}
-				/>
-
-				<Text style={styles.messageBubbleAI}>Chào bạn, tôi là LearnifyAI!!!</Text>
-			</View>
-
-			{messages &&
-				messages.map((message) => (
+const MessagesView = React.forwardRef(
+	(
+		{
+			messages,
+			onLayout,
+			onContentSizeChange,
+		}: {
+			messages?: { id: string; content: string; role: "USER" | "AI" }[];
+			onLayout: (event: LayoutChangeEvent) => void;
+			onContentSizeChange: (contentWidth: number, contentHeight: number) => void;
+		},
+		ref: React.Ref<FlatList<{ id: string; content: string; role: "USER" | "AI" }>>,
+	) => {
+		return (
+			<FlatList
+				style={styles.messagesContainer}
+				data={messages}
+				ref={ref}
+				keyExtractor={(item) => item.id}
+				renderItem={({ item }) => (
 					<View
-						key={message.id}
-						style={[message.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser]}
+						style={[
+							item.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser,
+						]}
 					>
-						<Text style={styles.messageText}>{message.content}</Text>
+						<Text style={styles.messageText}>{item.content}</Text>
 					</View>
-				))}
-		</ScrollView>
-	);
-};
+				)}
+				onLayout={onLayout}
+				onContentSizeChange={onContentSizeChange}
+			/>
+		);
+	},
+);
 
 const styles = StyleSheet.create({
 	container: {
@@ -121,7 +189,7 @@ const styles = StyleSheet.create({
 	topBar: {
 		flexDirection: "row",
 		alignItems: "center",
-		justifyContent: "space-between",
+		justifyContent: "center",
 		padding: 10,
 		backgroundColor: "#fff",
 		elevation: 2,
@@ -136,7 +204,7 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleAI: {
 		alignSelf: "flex-start",
-		backgroundColor: "#e0f7fa", // light blue for AI messages
+		backgroundColor: "#B3E5FC",
 		padding: 10,
 		borderRadius: 20,
 		marginBottom: 10,
@@ -145,7 +213,7 @@ const styles = StyleSheet.create({
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#cfd8dc", // light grey for user messages
+		backgroundColor: "#E0F2F1",
 		padding: 10,
 		borderRadius: 20,
 		marginBottom: 10,
@@ -154,11 +222,6 @@ const styles = StyleSheet.create({
 	},
 	messageText: {
 		fontSize: 16,
-	},
-	avatar: {
-		width: 24,
-		height: 24,
-		marginRight: 10,
 	},
 	inputContainer: {
 		flexDirection: "row",

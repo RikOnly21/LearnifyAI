@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, Image } from "react-native";
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Toast from "react-native-root-toast";
 
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useOAuth, useSignIn } from "@clerk/clerk-expo";
+import { FontAwesome } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
+import LinearGradient from "react-native-linear-gradient";
 
 export const useWarmUpBrowser = () => {
 	React.useEffect(() => {
@@ -19,54 +20,20 @@ export const useWarmUpBrowser = () => {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const handleOAuthLogin = async (startOAuthFlow: ReturnType<typeof useOAuth>["startOAuthFlow"]) => {
+	try {
+		const { createdSessionId, setActive } = await startOAuthFlow({
+			redirectUrl: Linking.createURL("/home"),
+		});
+
+		if (createdSessionId) setActive!({ session: createdSessionId });
+	} catch (err) {
+		console.error("OAuth error", err);
+	}
+};
+
 export default function App() {
 	useWarmUpBrowser();
-
-	const { startOAuthFlow: startGoogleOAuthFlow } = useOAuth({ strategy: "oauth_google" });
-	const { startOAuthFlow: startFacebookOAuthFlow } = useOAuth({ strategy: "oauth_facebook" });
-	const { startOAuthFlow: startGitHubOAuthFlow } = useOAuth({ strategy: "oauth_github" });
-
-	const handleGoogleLogin = React.useCallback(async () => {
-		try {
-			const { createdSessionId, setActive } = await startGoogleOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
-			});
-
-			if (createdSessionId) {
-				setActive!({ session: createdSessionId });
-			}
-		} catch (err) {
-			console.error("OAuth error", err);
-		}
-	}, [startGoogleOAuthFlow]);
-
-	const handleFacebookLogin = React.useCallback(async () => {
-		try {
-			const { createdSessionId, setActive } = await startFacebookOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
-			});
-
-			if (createdSessionId) {
-				setActive!({ session: createdSessionId });
-			}
-		} catch (err) {
-			console.error("OAuth error", err);
-		}
-	}, [startFacebookOAuthFlow]);
-
-	const handleGitHubLogin = React.useCallback(async () => {
-		try {
-			const { createdSessionId, setActive } = await startGitHubOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
-			});
-
-			if (createdSessionId) {
-				setActive!({ session: createdSessionId });
-			}
-		} catch (err) {
-			console.error("OAuth error", err);
-		}
-	}, [startGitHubOAuthFlow]);
 
 	const { signIn, setActive, isLoaded } = useSignIn();
 	const router = useRouter();
@@ -76,7 +43,11 @@ export default function App() {
 
 	const [isLoading, setLoading] = useState(false);
 
-	const onSignInPress = React.useCallback(async () => {
+	const { startOAuthFlow: startGoogleOAuthFlow } = useOAuth({ strategy: "oauth_google" });
+	const { startOAuthFlow: startFacebookOAuthFlow } = useOAuth({ strategy: "oauth_facebook" });
+	const { startOAuthFlow: startGitHubOAuthFlow } = useOAuth({ strategy: "oauth_github" });
+
+	const onSignInPress = async () => {
 		if (!isLoaded) return;
 		setLoading(true);
 
@@ -85,19 +56,23 @@ export default function App() {
 
 			if (signInAttempt.status === "complete") {
 				await setActive({ session: signInAttempt.createdSessionId });
-				router.replace("/main");
-			} else {
-				console.error(JSON.stringify({ signInAttempt }, null, 2));
+				return router.replace("/home");
 			}
+
+			console.error(JSON.stringify({ signInAttempt }, null, 2));
 		} catch (err: any) {
 			console.error(JSON.stringify(err, null, 2));
-			Toast.show(err.error.message, {
-				duration: 3000,
-			});
+
+			if (typeof err === "object" && "errors" in err && Array.isArray(err.errors)) {
+				Toast.show(err.errors[0].message, {
+					duration: 3000,
+					position: Toast.positions.CENTER,
+				});
+			}
 		}
 
 		setLoading(false);
-	}, [isLoaded, emailAddress, password]);
+	};
 
 	return (
 		<View style={styles.container}>
@@ -105,20 +80,35 @@ export default function App() {
 			<Text style={styles.title}>Đăng nhập LearnifyAI</Text>
 			<Text style={styles.subtitle}>Chào mừng bạn! Vui lòng đăng nhập để tiếp tục</Text>
 			<View style={styles.socialButtonsContainer}>
-				<TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
-					<Image source={require("@/assets/images/google-logo.png")} style={styles.socialLogo} />
+				<TouchableOpacity
+					style={styles.socialButton}
+					onPress={() => handleOAuthLogin(startGoogleOAuthFlow)}
+				>
+					<Image
+						source={require("@/assets/images/google-logo.png")}
+						style={styles.socialLogo}
+					/>
 				</TouchableOpacity>
 
-				<TouchableOpacity style={styles.socialButton} onPress={handleFacebookLogin}>
-					<Image source={require("@/assets/images/facebook-logo.png")} style={styles.socialLogo} />
+				<TouchableOpacity
+					style={styles.socialButton}
+					onPress={() => handleOAuthLogin(startFacebookOAuthFlow)}
+				>
+					<Image
+						source={require("@/assets/images/facebook-logo.png")}
+						style={styles.socialLogo}
+					/>
 				</TouchableOpacity>
 
-				<TouchableOpacity style={styles.socialButton} onPress={handleGitHubLogin}>
+				<TouchableOpacity
+					style={styles.socialButton}
+					onPress={() => handleOAuthLogin(startGitHubOAuthFlow)}
+				>
 					<FontAwesome name="github" size={24} color="black" />
 				</TouchableOpacity>
 			</View>
 
-			<Text style={styles.orText}>or</Text>
+			<Text style={styles.orText}>hoặc</Text>
 
 			<TextInput
 				style={styles.input}
@@ -135,21 +125,26 @@ export default function App() {
 				onChangeText={setPassword}
 				secureTextEntry
 			/>
-
-			<TouchableOpacity style={styles.continueButton} onPress={onSignInPress} disabled={isLoading}>
-				{isLoading ? <Text>Loading...</Text> : <Text style={styles.continueButtonText}>Sign In</Text>}
-			</TouchableOpacity>
+			<LinearGradient colors={["#1E90FF", "#00509E"]} style={styles.continueButton}>
+				<TouchableOpacity onPress={() => onSignInPress()} disabled={isLoading}>
+					{isLoading ? (
+						<Text style={styles.continueButtonText}>Đang tải...</Text>
+					) : (
+						<Text style={styles.continueButtonText}>Đăng nhập</Text>
+					)}
+				</TouchableOpacity>
+			</LinearGradient>
 
 			<View style={styles.footer}>
-				<Text style={styles.footerText}>Don’t have an account? </Text>
+				<Text style={styles.footerText}>Bạn không có tài khoản? </Text>
 				<TouchableOpacity>
 					<Link href="/auth/sign-up">
-						<Text style={styles.footerLink}>Sign up</Text>
+						<Text style={styles.footerLink}>Đăng ký</Text>
 					</Link>
 				</TouchableOpacity>
 			</View>
 
-			<Text style={styles.securedText}>Secured by Clerk</Text>
+			<Text style={styles.securedText}>Được bảo mật bởi Clerk</Text>
 		</View>
 	);
 }
@@ -167,6 +162,7 @@ const styles = StyleSheet.create({
 		width: 100,
 		height: 100,
 		resizeMode: "contain",
+		borderRadius: 10,
 	},
 	title: {
 		fontSize: 24,

@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+	Image,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+	ScrollView,
+} from "react-native";
 
 import { useOAuth, useSignUp } from "@clerk/clerk-expo";
 
@@ -7,6 +15,7 @@ import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import LinearGradient from "react-native-linear-gradient";
 
 export const useWarmUpBrowser = () => {
 	React.useEffect(() => {
@@ -29,7 +38,7 @@ export default function App() {
 	const handleGoogleSignUp = React.useCallback(async () => {
 		try {
 			const { createdSessionId, setActive } = await startGoogleOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
+				redirectUrl: Linking.createURL("/home"),
 			});
 
 			if (createdSessionId) {
@@ -43,7 +52,7 @@ export default function App() {
 	const handleGitHubSignUp = React.useCallback(async () => {
 		try {
 			const { createdSessionId, setActive } = await startGitHubOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
+				redirectUrl: Linking.createURL("/home"),
 			});
 
 			if (createdSessionId) {
@@ -57,7 +66,7 @@ export default function App() {
 	const handleFacebookSignUp = React.useCallback(async () => {
 		try {
 			const { createdSessionId, setActive } = await startFacebookOAuthFlow({
-				redirectUrl: Linking.createURL("/main"),
+				redirectUrl: Linking.createURL("/home"),
 			});
 
 			if (createdSessionId) {
@@ -91,8 +100,6 @@ export default function App() {
 
 			setPendingVerification(true);
 		} catch (err: any) {
-			// See https://clerk.com/docs/custom-flows/error-handling
-			// for more info on error handling
 			console.error(JSON.stringify(err, null, 2));
 		}
 	};
@@ -105,38 +112,42 @@ export default function App() {
 
 			if (completeSignUp.status === "complete") {
 				await setActive({ session: completeSignUp.createdSessionId });
-				router.replace("/main");
+				router.replace("/home");
 			} else {
 				console.error(JSON.stringify(completeSignUp, null, 2));
 			}
 		} catch (err: any) {
-			// See https://clerk.com/docs/custom-flows/error-handling
-			// for more info on error handling
 			console.error(JSON.stringify(err, null, 2));
 		}
 	};
 
 	return (
-		<View style={styles.container}>
+		<ScrollView style={styles.container}>
 			<View style={styles.logoContainer}>
-				<Ionicons name="person-circle-outline" size={64} color="black" />
+				<Image source={require("@/assets/images/logo.png")} style={styles.logoImage} />
 			</View>
 
-			<Text style={styles.title}>Create your account</Text>
-			<Text style={styles.subtitle}>Welcome! Please fill in the details to get started.</Text>
+			<Text style={styles.title}>Tạo tài khoản mới</Text>
+			<Text style={styles.subtitle}>Vui lòng điền thông tin vào các ô trống để bắt đầu</Text>
 			<View style={styles.socialButtonsContainer}>
 				<TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignUp}>
-					<Image source={require("@/assets/images/google-logo.png")} style={styles.socialLogo} />
+					<Image
+						source={require("@/assets/images/google-logo.png")}
+						style={styles.socialLogo}
+					/>
 				</TouchableOpacity>
 				<TouchableOpacity style={styles.socialButton} onPress={handleFacebookSignUp}>
-					<Image source={require("@/assets/images/facebook-logo.png")} style={styles.socialLogo} />
+					<Image
+						source={require("@/assets/images/facebook-logo.png")}
+						style={styles.socialLogo}
+					/>
 				</TouchableOpacity>
 				<TouchableOpacity style={styles.socialButton} onPress={handleGitHubSignUp}>
 					<FontAwesome name="github" size={24} color="black" />
 				</TouchableOpacity>
 			</View>
 
-			<Text style={styles.orText}>or</Text>
+			<Text style={styles.orText}>Hoặc</Text>
 
 			{!pendingVerification && (
 				<>
@@ -144,52 +155,54 @@ export default function App() {
 						<View style={styles.inputContainer}>
 							<TextInput
 								style={styles.input}
-								placeholder="First name"
+								placeholder="Họ"
 								value={firstName}
 								onChangeText={setFirstName}
 							/>
-							<Text style={styles.optionalText}>Optional</Text>
+							<Text style={styles.optionalText}></Text>
 						</View>
 						<View style={styles.inputContainer}>
 							<TextInput
 								style={styles.input}
-								placeholder="Last name"
+								placeholder="Tên"
 								value={lastName}
 								onChangeText={setLastName}
 							/>
-							<Text style={styles.optionalText}>Optional</Text>
+							<Text style={styles.optionalText}></Text>
 						</View>
 					</View>
 					<TextInput
 						style={styles.input}
-						placeholder="Username"
+						placeholder="Tài khoản"
 						value={username}
 						onChangeText={setUsername}
 					/>
 					<TextInput
 						style={styles.input}
-						placeholder="Email address"
+						placeholder="Địa chỉ email"
 						value={emailAddress}
 						onChangeText={setEmailAddress}
 						keyboardType="email-address"
 					/>
 					<TextInput
 						style={styles.input}
-						placeholder="Phone number"
+						placeholder="Số điện thoại"
 						value={phoneNumber}
 						onChangeText={setPhoneNumber}
 						keyboardType="phone-pad"
 					/>
 					<TextInput
 						style={styles.input}
-						placeholder="Password"
+						placeholder="Mật khẩu"
 						value={password}
 						onChangeText={setPassword}
 						secureTextEntry
 					/>
-					<TouchableOpacity style={styles.continueButton} onPress={onSignUpPress}>
-						<Text style={styles.continueButtonText}>Continue</Text>
-					</TouchableOpacity>
+					<LinearGradient colors={["#87CEFA", "#4682B4"]} style={{ borderRadius: 5 }}>
+						<TouchableOpacity style={styles.continueButton} onPress={onSignUpPress}>
+							<Text style={styles.continueButtonText}>Tiếp tục</Text>
+						</TouchableOpacity>
+					</LinearGradient>
 				</>
 			)}
 
@@ -202,22 +215,22 @@ export default function App() {
 						onChangeText={(code) => setCode(code)}
 					/>
 					<TouchableOpacity style={styles.continueButton} onPress={onPressVerify}>
-						<Text style={styles.continueButtonText}>Continue</Text>
+						<Text style={styles.continueButtonText}>Tiếp tục</Text>
 					</TouchableOpacity>
 				</>
 			)}
 
 			<View style={styles.footer}>
-				<Text style={styles.footerText}>Already have an account? </Text>
+				<Text style={styles.footerText}>Bạn đã có tài khoản? </Text>
 				<TouchableOpacity>
 					<Link href="/auth/sign-in">
-						<Text style={styles.footerLink}>Sign In</Text>
+						<Text style={styles.footerLink}>Đăng nhập</Text>
 					</Link>
 				</TouchableOpacity>
 			</View>
 
-			<Text style={styles.securedText}>Secured by Clerk</Text>
-		</View>
+			<Text style={styles.securedText}>Được bảo mật bởi Clerk</Text>
+		</ScrollView>
 	);
 }
 
@@ -226,7 +239,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#fff",
 		padding: 20,
-		justifyContent: "center",
 	},
 	socialLogo: {
 		width: 24,
@@ -235,7 +247,13 @@ const styles = StyleSheet.create({
 	},
 	logoContainer: {
 		alignItems: "center",
+	},
+	logoImage: {
 		marginBottom: 20,
+		width: 100,
+		height: 100,
+		resizeMode: "contain",
+		borderRadius: 10,
 	},
 	title: {
 		fontSize: 24,
@@ -294,7 +312,6 @@ const styles = StyleSheet.create({
 		color: "gray",
 	},
 	continueButton: {
-		backgroundColor: "#444",
 		borderRadius: 5,
 		padding: 15,
 		alignItems: "center",
