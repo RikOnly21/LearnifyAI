@@ -93,7 +93,11 @@ export default function RootLayout() {
 
 						<ClerkLoading>
 							<View className="flex-1 items-center justify-center bg-white">
-								<Gif source={require("@/assets/gifs/loading1-unscreen.gif")}></Gif>
+								<Gif
+									source={{
+										uri: "https://ik.imagekit.io/RikOnly21/learnifyAI/loading.gif?updatedAt=1723166111898",
+									}}
+								></Gif>
 							</View>
 						</ClerkLoading>
 					</ThemeProvider>

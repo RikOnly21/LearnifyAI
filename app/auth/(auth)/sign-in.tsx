@@ -3,11 +3,12 @@ import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "reac
 import Toast from "react-native-root-toast";
 
 import { useOAuth, useSignIn } from "@clerk/clerk-expo";
+
 import { FontAwesome } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import LinearGradient from "react-native-linear-gradient";
 
 export const useWarmUpBrowser = () => {
 	React.useEffect(() => {

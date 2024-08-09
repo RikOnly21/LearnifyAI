@@ -12,7 +12,8 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
+
+import { LinearGradient } from "expo-linear-gradient";
 import Toast from "react-native-root-toast";
 
 export default function App() {
@@ -152,6 +153,7 @@ export default function App() {
 						<Text style={styles.changeAvatarButtonText}>Lưu thay đổi</Text>
 					</TouchableOpacity>
 				</LinearGradient>
+
 				<LinearGradient colors={["#ef5350", "#c62828"]} style={{ borderRadius: 8 }}>
 					<TouchableOpacity
 						style={styles.saveChange}

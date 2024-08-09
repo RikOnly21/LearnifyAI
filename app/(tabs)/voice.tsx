@@ -5,7 +5,7 @@ import { useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
-import LinearGradient from "react-native-linear-gradient";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
 	Image,

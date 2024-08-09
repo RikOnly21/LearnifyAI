@@ -16,6 +16,14 @@ import Gif from "react-native-gif";
 
 import { api } from "@/lib/api";
 
+const numOfQuest = (diff: string) => {
+	if (diff === "easy") return 5;
+	if (diff === "medium") return 10;
+	if (diff === "hard") return 20;
+
+	return 5;
+};
+
 const QuizScreen = () => {
 	const { subject, difficulty } = useLocalSearchParams();
 	const router = useRouter();
@@ -38,7 +46,7 @@ const QuizScreen = () => {
 			const body = {
 				subject: subject === "custom" ? "random" : subject,
 				difficulty,
-				numOfQuestion: 2,
+				numOfQuestion: numOfQuest(difficulty as string),
 			};
 
 			const res = await api.post("/api/user/questions/start", JSON.stringify(body), {
@@ -51,7 +59,7 @@ const QuizScreen = () => {
 			setCorrect(undefined);
 
 			const { data, questionId } = res.data as {
-				data: { question: string; options: string[]; answer: string }[];
+				data: { question: string; options: string[]; answer: string; explain: string }[];
 				questionId: string;
 			};
 
@@ -113,12 +121,14 @@ const QuizScreen = () => {
 		setDuration(data.duration);
 	};
 
-	if (query.isLoading) {
+	if (query.isLoading || query.isFetching) {
 		return (
 			<View className="flex h-full items-center justify-center bg-white">
 				<Gif
-					source={require("@/assets/gifs/loading1-unscreen.gif")}
 					style={styles.gif}
+					source={{
+						uri: "https://ik.imagekit.io/RikOnly21/learnifyAI/loading.gif?updatedAt=1723213908801",
+					}}
 				></Gif>
 			</View>
 		);
@@ -188,6 +198,10 @@ const QuizScreen = () => {
 								</Text>
 							</TouchableOpacity>
 						))}
+
+						{typeof correct === "string" && (
+							<Text>{query.data.data[current].explain}</Text>
+						)}
 
 						<Text style={styles.totalText}>
 							Số câu hiện tại: {current + 1}/{query.data.data.length}

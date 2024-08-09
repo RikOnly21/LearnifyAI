@@ -1,7 +1,7 @@
 {
 	"expo": {
 		"name": "LearnifyAI",
-		"slug": "20002d96-ea70-405f-9d4f-5b1de53f2ffc",
+		"slug": "LearnifyAI",
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/logo.png",
@@ -37,7 +37,7 @@
 				"origin": false
 			},
 			"eas": {
-				"projectId": "20002d96-ea70-405f-9d4f-5b1de53f2ffc"
+				"projectId": "d4bb54ba-f26c-4034-930c-d8d16bf2dd65"
 			}
 		}
 	}

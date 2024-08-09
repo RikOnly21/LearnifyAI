@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import {
 	Image,
+	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
-	ScrollView,
 } from "react-native";
 
 import { useOAuth, useSignUp } from "@clerk/clerk-expo";
 
-import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import LinearGradient from "react-native-linear-gradient";
 
 export const useWarmUpBrowser = () => {
 	React.useEffect(() => {
@@ -171,6 +171,7 @@ export default function App() {
 							<Text style={styles.optionalText}></Text>
 						</View>
 					</View>
+
 					<TextInput
 						style={styles.input}
 						placeholder="Tài khoản"
@@ -198,7 +199,8 @@ export default function App() {
 						onChangeText={setPassword}
 						secureTextEntry
 					/>
-					<LinearGradient colors={["#87CEFA", "#4682B4"]} style={{ borderRadius: 5 }}>
+
+					<LinearGradient colors={["#1E90FF", "#00509E"]} style={{ borderRadius: 5 }}>
 						<TouchableOpacity style={styles.continueButton} onPress={onSignUpPress}>
 							<Text style={styles.continueButtonText}>Tiếp tục</Text>
 						</TouchableOpacity>
@@ -214,9 +216,12 @@ export default function App() {
 						placeholder="Code..."
 						onChangeText={(code) => setCode(code)}
 					/>
-					<TouchableOpacity style={styles.continueButton} onPress={onPressVerify}>
-						<Text style={styles.continueButtonText}>Tiếp tục</Text>
-					</TouchableOpacity>
+
+					<LinearGradient colors={["#1E90FF", "#00509E"]} style={{ borderRadius: 5 }}>
+						<TouchableOpacity style={styles.continueButton} onPress={onPressVerify}>
+							<Text style={styles.continueButtonText}>Tiếp tục</Text>
+						</TouchableOpacity>
+					</LinearGradient>
 				</>
 			)}
 
