@@ -53,16 +53,15 @@ export default function App() {
 				...mes,
 			] as Message[];
 
-			const res = await api.post("/api/user/voice", JSON.stringify(body), {
+			const res = await api.post("/api/voice", JSON.stringify(body), {
 				headers: {
 					"Content-Type": "application/json",
 					"clerk-user-id": user!.id,
 				},
 			});
 
-			if (res.status >= 400) {
+			if (res.status >= 400)
 				throw new Error("Status: " + res.status + " - " + res.statusText);
-			}
 
 			const { message } = res.data as { message: string };
 			setMessages([

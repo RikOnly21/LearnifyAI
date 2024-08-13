@@ -39,7 +39,7 @@ const App = () => {
 	const query = useQuery({
 		queryKey: ["leaderboard", subject, "easy"],
 		queryFn: async () => {
-			const res = await api.get<Response>(`/api/user/leaderboard/${subject}/easy`, {
+			const res = await api.get<Response>(`/api/leaderboard/${subject}/easy`, {
 				headers: { "clerk-user-id": user!.id },
 			});
 
@@ -47,6 +47,14 @@ const App = () => {
 			return res.data;
 		},
 	});
+
+	if (query.isError) {
+		return (
+			<View className="flex h-full items-center justify-center bg-white">
+				<Text className="text-xl">{query.error.message}</Text>
+			</View>
+		);
+	}
 
 	return (
 		<SafeAreaView className="h-full flex-1 gap-2 bg-white">

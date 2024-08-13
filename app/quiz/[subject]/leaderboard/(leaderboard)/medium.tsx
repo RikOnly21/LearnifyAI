@@ -39,7 +39,7 @@ const App = () => {
 	const query = useQuery({
 		queryKey: ["leaderboard", subject, "medium"],
 		queryFn: async () => {
-			const res = await api.get<Response>(`/api/user/leaderboard/${subject}/medium`, {
+			const res = await api.get<Response>(`/api/leaderboard/${subject}/medium`, {
 				headers: { "clerk-user-id": user!.id },
 			});
 

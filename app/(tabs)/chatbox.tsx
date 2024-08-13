@@ -40,7 +40,7 @@ export default function App() {
 			const headers = new Headers();
 			headers.set("clerk-user-id", user.id);
 
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/user/messages", {
+			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/messages", {
 				headers,
 			});
 			if (!res.ok) throw new Error("Internal server error!");
@@ -63,7 +63,7 @@ export default function App() {
 			headers.set("Content-Type", "application/json");
 
 			const res = await fetch(
-				"https://learnify-server-ruddy.vercel.app/api/user/messages/create",
+				"https://learnify-server-ruddy.vercel.app/api/messages/create",
 				{
 					headers,
 					method: "POST",

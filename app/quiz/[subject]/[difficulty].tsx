@@ -49,7 +49,7 @@ const QuizScreen = () => {
 				numOfQuestion: numOfQuest(difficulty as string),
 			};
 
-			const res = await api.post("/api/user/questions/start", JSON.stringify(body), {
+			const res = await api.post("/api/questions/start", JSON.stringify(body), {
 				headers: { "Content-Type": "application/json", "clerk-user-id": user.id },
 			});
 
@@ -109,7 +109,7 @@ const QuizScreen = () => {
 			endDate: new Date(body.endDate),
 		});
 
-		const res = await api.post("/api/user/questions/end", JSON.stringify(body), {
+		const res = await api.post("/api/questions/end", JSON.stringify(body), {
 			headers: {
 				"Content-Type": "application/json",
 				"clerk-user-id": user?.id,
@@ -156,6 +156,7 @@ const QuizScreen = () => {
 
 					<Text> </Text>
 				</View>
+
 				{happy === 4 ? (
 					<View style={{ paddingLeft: "30%" }}>
 						<AnimationGif happy={happy} />
@@ -273,8 +274,8 @@ const styles = StyleSheet.create({
 		backgroundColor: "#f8f8f8",
 	},
 	gif: {
-		width: "100%",
-		height: "50%",
+		width: "50%",
+		height: "25%",
 	},
 	walkingGif: {
 		width: 100,
