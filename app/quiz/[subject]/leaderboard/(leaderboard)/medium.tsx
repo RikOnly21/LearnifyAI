@@ -4,18 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { useGlobalSearchParams, useLocalSearchParams, useRouter } from "expo-router";
+import { useGlobalSearchParams, useRouter } from "expo-router";
 
 import React, { useMemo } from "react";
-import {
-	Image,
-	SafeAreaView,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from "react-native";
+import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type User = {
 	subject: string;
@@ -27,7 +19,11 @@ type User = {
 };
 
 type Response = {
-	data: { duration: number; points: number; User: { name: string | null; imageUrl: string } }[];
+	data: {
+		duration: number;
+		points: number;
+		User: { name: string | null; imageUrl: string; userId?: string };
+	}[];
 	user: User | null;
 };
 
@@ -39,14 +35,21 @@ const App = () => {
 	const query = useQuery({
 		queryKey: ["leaderboard", subject, "medium"],
 		queryFn: async () => {
-			const res = await api.get<Response>(`/api/leaderboard/${subject}/medium`, {
+			const res = await api.get<Response>(`/api/user/leaderboard/${subject}/medium`, {
 				headers: { "clerk-user-id": user!.id },
 			});
 
-			if (res.status >= 400) throw new Error("Status: " + res.status);
 			return res.data;
 		},
 	});
+
+	if (query.isError) {
+		return (
+			<View className="flex h-full items-center justify-center bg-white">
+				<Text className="text-xl">{query.error.message}</Text>
+			</View>
+		);
+	}
 
 	return (
 		<SafeAreaView className="h-full flex-1 gap-2 bg-white">
@@ -63,7 +66,7 @@ const App = () => {
 
 			{query.isLoading && (
 				<View className="flex flex-1 items-center justify-center">
-					<Text className="">Loading...</Text>
+					<Text className="">Đang tải...</Text>
 				</View>
 			)}
 
@@ -98,7 +101,7 @@ const App = () => {
 								style={{
 									backgroundColor: getPodiumData(
 										query.data.data.findIndex(
-											(item) => item.User.name === user!.username,
+											(item) => item.User.userId === user!.id,
 										) + 1,
 									).bgColor,
 								}}
@@ -106,7 +109,7 @@ const App = () => {
 								<View className="flex-row items-center gap-3">
 									<Text className="text-4xl underline">
 										{query.data.data.findIndex(
-											(item) => item.User.name === user!.username,
+											(item) => item.User.userId === user!.id,
 										) + 1}
 									</Text>
 
@@ -168,11 +171,11 @@ const Rank = ({ rank, data }: { rank: number; data: Response["data"] }) => {
 const getPodiumData = (rank: number) => {
 	switch (rank) {
 		case 1:
-			return { bgColor: "#FFD700", padding: 100 }; // gold
+			return { bgColor: "#FFD700", padding: 100 };
 		case 2:
-			return { bgColor: "#C0C0C0", padding: 50 }; // silver
+			return { bgColor: "#C0C0C0", padding: 50 };
 		case 3:
-			return { bgColor: "#CD7F32", padding: 10 }; // bronze
+			return { bgColor: "#CD7F32", padding: 10 };
 		default:
 			return { bgColor: "#9ca3af", padding: 0 };
 	}

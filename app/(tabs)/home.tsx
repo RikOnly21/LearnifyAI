@@ -1,8 +1,8 @@
-import { useAuth, useUser } from "@clerk/clerk-expo";
-import { Redirect, useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
 
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const categories = [
 	{
@@ -93,19 +93,18 @@ const categories = [
 ];
 
 export default function App() {
-	const { isLoaded, isSignedIn } = useAuth();
 	const { user } = useUser();
 	const router = useRouter();
-
-	if (!isLoaded) return null;
-	if (!isSignedIn || !user) return <Redirect href="/" />;
 
 	return (
 		<View style={styles.container}>
 			<ScrollView style={styles.scrollView}>
 				<View style={styles.header}>
-					<Text style={styles.name}>Xin chào {user.username} ✋!</Text>
-					<Image source={{ uri: user.imageUrl }} style={styles.profileImage} />
+					<Text style={styles.name}>Xin chào {user!.username} ✋!</Text>
+
+					<View style={styles.profileImageContainer}>
+						<Image source={{ uri: user!.imageUrl }} style={styles.profileImage} />
+					</View>
 				</View>
 
 				<Image source={require("@/assets/images/english.png")} style={styles.bannerImage} />
@@ -113,11 +112,13 @@ export default function App() {
 				<View style={styles.categoryContainer}>
 					{categories.map((category, index) => (
 						<View key={index}>
-							<View>
-								<Text style={styles.categoryTitle}>{category.title}</Text>
-							</View>
+							<Text style={styles.categoryTitle}>{category.title}</Text>
 
-							<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+							<ScrollView
+								contentContainerStyle={styles.cardContainer}
+								horizontal
+								showsHorizontalScrollIndicator={false}
+							>
 								{category.items.map((item, idx) => (
 									<TouchableOpacity
 										key={idx}
@@ -137,90 +138,79 @@ export default function App() {
 	);
 }
 
-const styles = StyleSheet.create({
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#fff",
-	},
-	signOutButton: {
-		backgroundColor: "red",
-		borderRadius: 5,
-		paddingVertical: 5,
-		paddingHorizontal: 15,
-	},
-	profileContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-	},
-	signOutImage: {
-		width: 20,
-		height: 20,
+		backgroundColor: "#f8f9fa",
 	},
 	scrollView: {
-		padding: 20,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
 	},
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		backgroundColor: "#fff",
 		paddingBottom: 12,
 	},
-	greeting: {
-		fontSize: 18,
-		marginRight: 5,
-		color: "#fff",
-	},
 	name: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#000",
+		fontSize: 20,
+		fontWeight: "600",
+		color: "#333",
 	},
-	profileImage: {
+	profileImageContainer: {
 		width: 40,
 		height: 40,
-		borderRadius: 20,
-		marginLeft: "auto",
+		borderRadius: 25,
+		overflow: "hidden",
 	},
-	searchInput: {
-		flex: 1,
-		height: 40,
+	profileImage: {
+		width: "100%",
+		height: "100%",
 	},
 	bannerImage: {
 		width: "100%",
-		height: 150,
-		borderRadius: 10,
-		marginBottom: 10,
+		height: 180,
+		borderRadius: 15,
+		marginBottom: 12,
+		resizeMode: "cover",
 	},
 	categoryContainer: {
-		display: "flex",
-		rowGap: 10,
-		paddingBottom: 30,
+		rowGap: 12,
+		paddingBottom: 40,
 	},
 	categoryTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		marginBottom: 10,
+		fontSize: 20,
+		fontWeight: 700,
+		color: "#333",
+		marginBottom: 8,
+	},
+	cardContainer: {
+		flexDirection: "row",
+		paddingBottom: 4,
+		gap: 12,
 	},
 	card: {
-		width: 150,
-		marginRight: 10,
-		display: "flex",
+		width: 160,
+		backgroundColor: "#fff",
+		borderRadius: 15,
+		paddingVertical: 15,
+		paddingHorizontal: 10,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#E0F2F1",
-		borderRadius: 10,
-		padding: 10,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 2,
 	},
 	cardImage: {
-		width: 80,
-		height: 80,
-		borderRadius: 15,
+		width: 90,
+		height: 90,
+		borderRadius: 10,
+		marginBottom: 10,
 	},
-	cardTitle: {
-		fontSize: 14,
-		textAlign: "center",
-		color: "#00363A",
-	},
+	cardTitle: { fontSize: 14, textAlign: "center", color: "#555" },
 });

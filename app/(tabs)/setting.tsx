@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 
 import React, { useState } from "react";
 import {
+	ActivityIndicator,
 	Image,
 	ScrollView,
 	StyleSheet,
@@ -12,54 +13,42 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-
-import { LinearGradient } from "expo-linear-gradient";
 import Toast from "react-native-root-toast";
+
+import { useMutation } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function App() {
 	const { user } = useUser();
 	const { isLoaded, signOut } = useAuth();
 
-	const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-	const [firstName, setFirstName] = useState(user?.firstName);
-	const [lastName, setLastName] = useState(user?.lastName);
+	const [firstName, setFirstName] = useState(user?.firstName || "");
+	const [lastName, setLastName] = useState(user?.lastName || "");
+	const [username, setUsername] = useState(user?.username || "");
 	const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumbers || "");
+
+	const updateUserMutation = useMutation({
+		onError: (error) => Toast.show("Lưu thay đổi thất bại!", { duration: 5000 }),
+		onSuccess: () => Toast.show("Lưu thay đổi thành công!", { duration: 5000 }),
+		mutationFn: async () => {
+			console.log(lastName, firstName, username);
+			await user?.update({ firstName, lastName, username }).then(() => user.reload());
+		},
+	});
 
 	const setProfileImage = async (base64: string) => {
 		try {
 			await user?.setProfileImage({ file: base64 }).then(() => user.reload());
 		} catch (error) {
 			console.error("Error setting profile image:", error);
+			Toast.show("Lưu ảnh đại diện thất bại!", { duration: 5000 });
 		}
 	};
 
 	const updateUser = async () => {
-		if (!firstName || !lastName) return;
-
-		try {
-			console.log(firstName, lastName);
-			await user?.update({ firstName, lastName }).then(() => user.reload());
-		} catch (error) {
-			console.log(new Error(error as string));
-		}
+		if (!firstName || !lastName || !username) return;
+		updateUserMutation.mutate();
 	};
-
-	const handleSaveChanges = async () => {
-		if (!user) {
-			Toast.show("You're not logged in!!", { duration: 5000 });
-			return;
-		}
-
-		try {
-			updateUser();
-			Toast.show("Changes saved successfully!", { duration: 5000 });
-		} catch (error) {
-			console.error("Error saving changes:", error);
-			Toast.show("Failed to save changes.", { duration: 5000 });
-		}
-	};
-
-	if (!isLoaded) return null;
 
 	const pickImage = async () => {
 		if (!user) return;
@@ -85,84 +74,121 @@ export default function App() {
 		}
 	};
 
+	if (!isLoaded) {
+		return (
+			<View className="flex-1 items-center justify-center">
+				<ActivityIndicator size="large" color="#000" />
+			</View>
+		);
+	}
+
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.greeting}>
-					Xin chào {user?.firstName?.toString() || user?.username}
-				</Text>
+				<Text style={styles.headerTitle}>Thông tin cá nhân</Text>
 			</View>
 
-			<View style={styles.card}>
-				<Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+			<View style={{ paddingHorizontal: 20, gap: 12 }}>
+				<View style={styles.card}>
+					<Text style={styles.sectionTitle}>
+						Xin chào {`${user?.lastName} ${user?.firstName}` || user?.username}
+					</Text>
 
-				<View className="gap-2" style={styles.avatarSection}>
-					<Image
-						source={
-							user?.hasImage
-								? { uri: user.imageUrl }
-								: require("@/assets/images/logo.png")
-						}
-						style={styles.avatar}
-					/>
-					<LinearGradient colors={["#42a5f5", "#2196f3"]} style={{ borderRadius: 8 }}>
-						<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
-							<Text style={styles.changeAvatarButtonText}>Thay đổi ảnh đại diện</Text>
+					<View className="gap-2" style={styles.avatarSection}>
+						<Image
+							source={
+								user?.hasImage
+									? { uri: user.imageUrl }
+									: require("@/assets/images/logo.png")
+							}
+							style={styles.avatar}
+						/>
+						<LinearGradient colors={["#42a5f5", "#2196f3"]} style={{ borderRadius: 8 }}>
+							<TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>
+								<Text style={styles.changeAvatarButtonText}>
+									Thay đổi ảnh đại diện
+								</Text>
+							</TouchableOpacity>
+						</LinearGradient>
+					</View>
+
+					<View style={styles.infoSection}>
+						<Text style={styles.label}>Username</Text>
+						<TextInput
+							onChangeText={setUsername}
+							style={styles.infoText}
+							defaultValue={user?.username || "Trống"}
+						/>
+					</View>
+
+					<View style={styles.infoSection}>
+						<Text style={styles.label}>Họ</Text>
+						<TextInput
+							onChangeText={setLastName}
+							style={styles.infoText}
+							defaultValue={user?.lastName || "Trống"}
+						/>
+
+						<Text style={styles.label}>Tên</Text>
+						<TextInput
+							onChangeText={setFirstName}
+							style={styles.infoText}
+							defaultValue={user?.firstName || "Trống"}
+						/>
+					</View>
+
+					<View style={styles.infoSection}>
+						<Text style={styles.label}>Email</Text>
+						<TextInput
+							style={styles.infoText}
+							defaultValue={user?.emailAddresses.toString()}
+						/>
+					</View>
+
+					<View style={styles.infoSection}>
+						<Text style={styles.label}>Số điện thoại</Text>
+						<TextInput
+							onChangeText={setPhoneNumber}
+							style={styles.infoText}
+							defaultValue={user?.phoneNumbers.toString() || "Chưa có số điện thoại"}
+						/>
+					</View>
+				</View>
+
+				<View style={styles.lastContainer}>
+					<LinearGradient
+						colors={["#66bb6a", "#43a047"]}
+						style={{
+							borderRadius: 8,
+							flex: 1,
+							opacity: updateUserMutation.isPending ? 0.5 : 1,
+						}}
+					>
+						<TouchableOpacity
+							style={styles.saveChange}
+							onPress={() => updateUser()}
+							disabled={updateUserMutation.isPending}
+						>
+							<Ionicons name="save" size={24} color="white" />
+							<Text style={styles.changeAvatarButtonText}>
+								{updateUserMutation.isPending ? "Đang Lưu..." : "Lưu Thay Đổi"}
+							</Text>
+						</TouchableOpacity>
+					</LinearGradient>
+
+					<LinearGradient
+						colors={["#ef5350", "#c62828"]}
+						style={{ borderRadius: 8, flex: 1 }}
+					>
+						<TouchableOpacity
+							style={styles.saveChange}
+							onPress={() => signOut({ redirectUrl: "/" })}
+						>
+							<MaterialIcons name="logout" size={24} color="white" />
+							<Text style={styles.changeAvatarButtonText}>Đăng Xuất</Text>
 						</TouchableOpacity>
 					</LinearGradient>
 				</View>
-
-				<View style={styles.infoSection}>
-					<Text style={styles.label}>Họ</Text>
-					<TextInput
-						onChangeText={setFirstName}
-						style={styles.infoText}
-						defaultValue={user?.firstName || "Trống"}
-					/>
-
-					<Text style={styles.label}>Tên</Text>
-					<TextInput
-						onChangeText={setLastName}
-						style={styles.infoText}
-						defaultValue={user?.lastName || "Trống"}
-					/>
-				</View>
-
-				<View style={styles.infoSection}>
-					<Text style={styles.label}>Email</Text>
-					<TextInput
-						style={styles.infoText}
-						defaultValue={user?.emailAddresses.toString()}
-					/>
-				</View>
-
-				<View style={styles.infoSection}>
-					<Text style={styles.label}>Số điện thoại</Text>
-					<TextInput
-						onChangeText={setPhoneNumber}
-						style={styles.infoText}
-						defaultValue={user?.phoneNumbers.toString() || "Chưa có số điện thoại"}
-					/>
-				</View>
-			</View>
-
-			<View style={styles.lastContainer}>
-				<LinearGradient colors={["#66bb6a", "#43a047"]} style={{ borderRadius: 8 }}>
-					<TouchableOpacity style={styles.saveChange} onPress={() => updateUser()}>
-						<Ionicons name="save" size={24} color="white" />
-						<Text style={styles.changeAvatarButtonText}>Lưu thay đổi</Text>
-					</TouchableOpacity>
-				</LinearGradient>
-
-				<LinearGradient colors={["#ef5350", "#c62828"]} style={{ borderRadius: 8 }}>
-					<TouchableOpacity
-						style={styles.saveChange}
-						onPress={() => signOut({ redirectUrl: "/" })}
-					>
-						<MaterialIcons name="logout" size={24} color="white" />
-						<Text style={styles.changeAvatarButtonText}>Đăng Xuất</Text>
-					</TouchableOpacity>
-				</LinearGradient>
 			</View>
 		</ScrollView>
 	);
@@ -171,7 +197,6 @@ export default function App() {
 const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
-		padding: 20,
 		backgroundColor: "#f8f9fa",
 		gap: 12,
 	},
@@ -180,7 +205,16 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	header: {
+		flexDirection: "column",
 		alignItems: "center",
+		padding: 10,
+		backgroundColor: "#ffffff",
+		elevation: 2,
+	},
+	headerTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#000000",
 	},
 	greeting: {
 		fontSize: 18,
@@ -201,14 +235,14 @@ const styles = StyleSheet.create({
 	},
 	sectionTitle: {
 		fontSize: 24,
-		fontWeight: "bold",
 		marginBottom: 10,
 		textAlign: "center",
 	},
 	lastContainer: {
-		width: "100%", // Chiếm toàn bộ chiều rộng
-		flexDirection: "row", // Sắp xếp theo hàng ngang
+		width: "100%",
+		flexDirection: "row",
 		justifyContent: "space-around",
+		gap: 12,
 	},
 	avatarSection: {
 		alignItems: "center",
@@ -220,21 +254,22 @@ const styles = StyleSheet.create({
 		borderRadius: 50,
 	},
 	saveChange: {
-		flex: 1, // Chiếm toàn bộ không gian
-		flexDirection: "row", // Sắp xếp theo hàng ngang
-		alignItems: "center", // Căn giữa theo chiều dọc
-		justifyContent: "center", // Căn giữa theo chiều ngang
-		paddingLeft: 16, // Padding trái
-		paddingRight: 16, // Padding phải
-		paddingTop: 8, // Padding trên
-		paddingBottom: 8, // Padding dưới
-		borderRadius: 8, // Độ bo góc
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		paddingLeft: 16,
+		paddingRight: 16,
+		paddingTop: 8,
+		gap: 8,
+		paddingBottom: 8,
+		borderRadius: 8,
 	},
 	changeAvatarButton: {
-		borderRadius: 8, // Độ bo góc
-		paddingLeft: 16, // Padding trái
-		paddingRight: 16, // Padding phải
-		paddingTop: 8, // Padding trên
+		borderRadius: 8,
+		paddingLeft: 16,
+		paddingRight: 16,
+		paddingTop: 8,
 		paddingBottom: 8,
 	},
 	changeAvatarButtonText: {

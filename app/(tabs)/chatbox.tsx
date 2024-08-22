@@ -1,85 +1,70 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-	StyleSheet,
-	Text,
-	View,
-	TextInput,
-	TouchableOpacity,
-	FlatList,
-	Keyboard,
-	LayoutChangeEvent,
-} from "react-native";
+import { useUser } from "@clerk/clerk-expo";
+import { UserResource } from "@clerk/types";
+
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useUser } from "@clerk/clerk-expo";
-import Toast from "react-native-root-toast";
 
-type Message = {
-	messages: { id: string; content: string; role: "USER" | "AI"; createdAt: Date }[];
+import React, { useEffect, useRef, useState } from "react";
+import {
+	ActivityIndicator,
+	FlatList,
+	Image,
+	Keyboard,
+	LayoutChangeEvent,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from "react-native";
+import Markdown from "react-native-markdown-display";
+
+import { api } from "@/lib/api";
+
+export type Message = {
+	messages: { id: string; content: string; role: "USER" | "ASSISTANT" }[];
 };
+
+const defaultMessage = {
+	id: "0",
+	content: "Chào bạn, tôi là LearnifyAI!",
+	role: "ASSISTANT",
+} satisfies Message["messages"][number];
 
 export default function App() {
 	const [inputText, setInputText] = useState("");
 	const { user } = useUser();
-	const flatListRef = useRef<FlatList<{
-		id: string;
-		content: string;
-		role: "USER" | "AI";
-	}> | null>(null);
+
+	const [messages, setMessages] = useState<Message["messages"]>([defaultMessage]);
+
+	const flatListRef = useRef<FlatList<Message["messages"][number]> | null>(null);
+
 	const [listHeight, setListHeight] = useState(0);
 	const [contentHeight, setContentHeight] = useState(0);
 
 	const query = useQuery({
-		queryKey: ["user", "messages"],
+		queryKey: ["user", "messages", user?.id],
 		queryFn: async () => {
-			if (!user) {
-				Toast.show("You're not logged in!!", { duration: 5000 });
-				throw new Error("You're not logged in!!");
-			}
-
-			const headers = new Headers();
-			headers.set("clerk-user-id", user.id);
-
-			const res = await fetch("https://learnify-server-ruddy.vercel.app/api/messages", {
-				headers,
+			const res = await api.get<Message>("/api/user/messages", {
+				headers: { "clerk-user-id": user?.id },
 			});
-			if (!res.ok) throw new Error("Internal server error!");
 
-			return (await res.json()) as Message;
+			const data = res.data.messages;
+			setMessages([defaultMessage, ...data]);
+
+			await new Promise((resolve) => setTimeout(resolve, 10000));
+
+			return data;
 		},
 	});
 
-	const sendMessage = useMutation({
-		onSuccess: () => setInputText(""),
-		mutationFn: async () => {
-			Keyboard.dismiss();
-			if (!user) {
-				Toast.show("You're not logged in!!", { duration: 5000 });
-				throw new Error("You're not logged in!!");
-			}
+	const sendMessageMutation = useMutation({
+		onSuccess: (data) => {
+			setMessages((prev) => [
+				...prev,
+				{ id: Math.random().toString(), content: data, role: "ASSISTANT" },
+			]);
 
-			const headers = new Headers();
-			headers.set("clerk-user-id", user.id);
-			headers.set("Content-Type", "application/json");
-
-			const res = await fetch(
-				"https://learnify-server-ruddy.vercel.app/api/messages/create",
-				{
-					headers,
-					method: "POST",
-					body: JSON.stringify([
-						{ content: "Chào bạn, tôi là LearnifyAI!!!", role: "assistant" },
-						...(query.data?.messages || []).map(({ content, role }) => ({
-							content,
-							role: role === "AI" ? "assistant" : "user",
-						})),
-						{ content: inputText, role: "user" },
-					]),
-				},
-			);
-
-			if (!res.ok) throw new Error("Internal server error!");
-			await query.refetch();
 			if (flatListRef.current) {
 				flatListRef.current.scrollToOffset({
 					offset: contentHeight - listHeight,
@@ -87,55 +72,89 @@ export default function App() {
 				});
 			}
 		},
+		mutationFn: async () => {
+			const body = JSON.stringify(
+				messages.map(({ content, role }) => ({ content, role: role.toLowerCase() })),
+			);
+
+			const res = await api.post<{ message: string }>("/api/user/messages/create", body, {
+				headers: { "clerk-user-id": user?.id, "Content-Type": "application/json" },
+			});
+
+			return res.data.message;
+		},
 	});
 
+	const handleSendMessage = () => {
+		if (inputText.trim() === "") return;
+
+		Keyboard.dismiss();
+		setMessages((prev) => [
+			...prev,
+			{ id: Math.random().toString(), content: inputText, role: "USER" },
+		]);
+		setInputText("");
+
+		sendMessageMutation.mutate();
+	};
+
 	useEffect(() => {
-		if (query.data && flatListRef.current) {
+		if (messages.length > 0 && flatListRef.current) {
 			flatListRef.current.scrollToOffset({
 				offset: contentHeight - listHeight,
 				animated: true,
 			});
 		}
-	}, [query.data, contentHeight, listHeight]);
+	}, [messages, contentHeight, listHeight]);
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.topBar}>
-				<Text style={styles.title}>Giải đáp cùng AI</Text>
+				<Text style={styles.title}>Trò chuyện cùng AI</Text>
 			</View>
 
-			{query.isSuccess && (
+			{(query.isSuccess || query.isError) && (
 				<MessagesView
-					messages={query.data.messages}
+					messages={messages}
+					user={user}
 					ref={flatListRef}
 					onLayout={(event: LayoutChangeEvent) =>
 						setListHeight(event.nativeEvent.layout.height)
 					}
-					onContentSizeChange={(contentWidth: number, contentHeight: number) =>
-						setContentHeight(contentHeight)
-					}
-				/>
-			)}
-			{query.isLoading && (
-				<MessagesView
-					messages={[]}
-					ref={flatListRef}
-					onLayout={(event: LayoutChangeEvent) =>
-						setListHeight(event.nativeEvent.layout.height)
-					}
-					onContentSizeChange={(contentWidth: number, contentHeight: number) =>
+					onContentSizeChange={(_: number, contentHeight: number) =>
 						setContentHeight(contentHeight)
 					}
 				/>
 			)}
 
-			<View style={styles.inputContainer}>
-				<TextInput style={styles.textInput} value={inputText} onChangeText={setInputText} />
+			{(query.isLoading || query.isFetching) && !(query.isError || query.isSuccess) && (
+				<View style={{ flex: 1 }}>
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="large" color="#4CAF50" />
+						<Text style={styles.loadingText}>Đang tải...</Text>
+					</View>
+				</View>
+			)}
+
+			<View style={styles.inputContainer} className="px-4">
+				<TextInput
+					style={styles.textInput}
+					value={inputText}
+					onChangeText={setInputText}
+					placeholder="Nhập tin nhắn..."
+				/>
+
 				<TouchableOpacity
-					onPress={() => sendMessage.mutate()}
-					disabled={sendMessage.isPending}
+					onPress={handleSendMessage}
+					style={{
+						opacity:
+							sendMessageMutation.isPending || query.isFetching || query.isLoading
+								? 0.5
+								: 1,
+					}}
+					disabled={sendMessageMutation.isPending || query.isFetching || query.isLoading}
 				>
-					{sendMessage.isPending ? (
+					{sendMessageMutation.isPending || query.isFetching || query.isLoading ? (
 						<Ionicons name="stop-circle" size={24} color="#D3D3D3" />
 					) : (
 						<Ionicons name="send" size={24} color="#1E90FF" />
@@ -150,14 +169,16 @@ const MessagesView = React.forwardRef(
 	(
 		{
 			messages,
+			user,
 			onLayout,
 			onContentSizeChange,
 		}: {
-			messages?: { id: string; content: string; role: "USER" | "AI" }[];
+			messages?: Message["messages"];
+			user?: UserResource | null;
 			onLayout: (event: LayoutChangeEvent) => void;
 			onContentSizeChange: (contentWidth: number, contentHeight: number) => void;
 		},
-		ref: React.Ref<FlatList<{ id: string; content: string; role: "USER" | "AI" }>>,
+		ref: React.Ref<FlatList<Message["messages"][number]>>,
 	) => {
 		return (
 			<FlatList
@@ -165,25 +186,52 @@ const MessagesView = React.forwardRef(
 				data={messages}
 				ref={ref}
 				keyExtractor={(item) => item.id}
-				renderItem={({ item }) => (
-					<View
-						style={[
-							item.role === "AI" ? styles.messageBubbleAI : styles.messageBubbleUser,
-						]}
-					>
-						<Text style={styles.messageText}>{item.content}</Text>
-					</View>
-				)}
 				onLayout={onLayout}
 				onContentSizeChange={onContentSizeChange}
+				renderItem={({ item }) => (
+					<MessageBubble content={item.content} role={item.role} user={user} />
+				)}
 			/>
 		);
 	},
 );
 
+const MessageBubble = ({
+	content,
+	role,
+	user,
+}: {
+	content: string;
+	role: "USER" | "ASSISTANT";
+	user?: UserResource | null;
+}) => {
+	const isAssistant = role === "ASSISTANT";
+
+	return (
+		<View
+			style={[styles.messageContainer, isAssistant ? styles.messageAI : styles.messageUser]}
+		>
+			<Image
+				source={isAssistant ? require("@/assets/images/logo.png") : { uri: user?.imageUrl }}
+				style={styles.logo}
+			/>
+
+			<View
+				style={[
+					styles.messageBubble,
+					isAssistant ? styles.messageBubbleAI : styles.messageBubbleUser,
+				]}
+			>
+				<Markdown>{content}</Markdown>
+			</View>
+		</View>
+	);
+};
+
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+		gap: 8,
 		backgroundColor: "#f0f0f5",
 	},
 	topBar: {
@@ -202,27 +250,39 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 10,
 	},
+	messageContainer: {
+		gap: 8,
+		flexDirection: "row",
+		paddingHorizontal: 8,
+		paddingVertical: 6,
+	},
+	messageAI: {
+		alignSelf: "flex-start",
+	},
+	messageUser: {
+		alignSelf: "flex-end",
+		flexDirection: "row-reverse",
+	},
+	messageBubble: {
+		paddingHorizontal: 8,
+		minHeight: 40,
+		borderRadius: 12,
+		maxWidth: "85%",
+		shadowColor: "#000",
+		shadowOffset: { height: 2, width: 0 },
+		shadowOpacity: 0.8,
+		shadowRadius: 2,
+		elevation: 3,
+	},
 	messageBubbleAI: {
 		alignSelf: "flex-start",
 		backgroundColor: "#B3E5FC",
-		padding: 10,
-		borderRadius: 20,
-		marginBottom: 10,
-		maxWidth: "80%",
-		marginLeft: 10,
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#E0F2F1",
-		padding: 10,
-		borderRadius: 20,
-		marginBottom: 10,
-		maxWidth: "80%",
-		marginRight: 10,
+		backgroundColor: "#DCF8C6",
 	},
-	messageText: {
-		fontSize: 16,
-	},
+
 	inputContainer: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -233,10 +293,30 @@ const styles = StyleSheet.create({
 	},
 	textInput: {
 		flex: 1,
-		padding: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 4,
 		borderWidth: 1,
 		borderColor: "#ddd",
-		borderRadius: 20,
+		borderRadius: 8,
 		marginRight: 10,
+	},
+	loadingContainer: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		alignItems: "center",
+		justifyContent: "center",
+		zIndex: 10,
+	},
+	loadingText: {
+		fontSize: 18,
+		color: "#666",
+	},
+	logo: {
+		width: 40,
+		height: 40,
+		borderRadius: 100,
 	},
 });

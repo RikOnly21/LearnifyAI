@@ -13,11 +13,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { LogBox, View } from "react-native";
 import Gif from "react-native-gif";
 import { RootSiblingParent } from "react-native-root-siblings";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+
+LogBox.ignoreLogs(["new NativeEventEmitter"]);
 
 export interface TokenCache {
 	getToken: (key: string) => Promise<string | undefined | null>;

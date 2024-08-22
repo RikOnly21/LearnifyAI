@@ -4,18 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { useGlobalSearchParams, useLocalSearchParams, useRouter } from "expo-router";
+import { useGlobalSearchParams, useRouter } from "expo-router";
 
 import React, { useMemo } from "react";
-import {
-	Image,
-	SafeAreaView,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from "react-native";
+import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type User = {
 	subject: string;
@@ -27,7 +19,11 @@ type User = {
 };
 
 type Response = {
-	data: { duration: number; points: number; User: { name: string | null; imageUrl: string } }[];
+	data: {
+		duration: number;
+		points: number;
+		User: { name: string | null; imageUrl: string; userId?: string };
+	}[];
 	user: User | null;
 };
 
@@ -39,11 +35,10 @@ const App = () => {
 	const query = useQuery({
 		queryKey: ["leaderboard", subject, "easy"],
 		queryFn: async () => {
-			const res = await api.get<Response>(`/api/leaderboard/${subject}/easy`, {
+			const res = await api.get<Response>(`/api/user/leaderboard/${subject}/easy`, {
 				headers: { "clerk-user-id": user!.id },
 			});
 
-			if (res.status >= 400) throw new Error("Status: " + res.status);
 			return res.data;
 		},
 	});
@@ -71,7 +66,7 @@ const App = () => {
 
 			{query.isLoading && (
 				<View className="flex flex-1 items-center justify-center">
-					<Text className="">Loading...</Text>
+					<Text className="">Đang tải...</Text>
 				</View>
 			)}
 
@@ -106,7 +101,7 @@ const App = () => {
 								style={{
 									backgroundColor: getPodiumData(
 										query.data.data.findIndex(
-											(item) => item.User.name === user!.username,
+											(item) => item.User.userId === user!.id,
 										) + 1,
 									).bgColor,
 								}}
@@ -114,7 +109,7 @@ const App = () => {
 								<View className="flex-row items-center gap-3">
 									<Text className="text-4xl underline">
 										{query.data.data.findIndex(
-											(item) => item.User.name === user!.username,
+											(item) => item.User.userId === user!.id,
 										) + 1}
 									</Text>
 

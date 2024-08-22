@@ -1,11 +1,10 @@
-import Voice, { SpeechErrorEvent, SpeechResultsEvent } from "@react-native-voice/voice";
+import { useUser } from "@clerk/clerk-expo";
 import { useMutation } from "@tanstack/react-query";
 
-import { useUser } from "@clerk/clerk-expo";
-import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
-import { api } from "@/lib/api";
-import { LinearGradient } from "expo-linear-gradient";
+import * as Speech from "expo-speech";
+
+import Voice, { SpeechErrorEvent, SpeechResultsEvent } from "@react-native-voice/voice";
 import React, { useEffect, useState } from "react";
 import {
 	Image,
@@ -19,10 +18,27 @@ import {
 import Gif from "react-native-gif";
 import Toast from "react-native-root-toast";
 
+import { api } from "@/lib/api";
+
 interface Message {
-	role: "assistant" | "user";
+	role: "assistant" | "user" | "system";
 	content: string;
 }
+
+const voices: Record<string, { name: string; static: string; animate: string; voice: string }> = {
+	male: {
+		name: "Deni",
+		static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.png",
+		animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.gif",
+		voice: "en-us-x-iol-local",
+	},
+	female: {
+		name: "Sofia",
+		static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png",
+		animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif",
+		voice: "en-us-x-iob-local",
+	},
+};
 
 export default function App() {
 	const { user } = useUser();
@@ -31,37 +47,23 @@ export default function App() {
 
 	const [recording, setRecording] = useState(false);
 	const [speaking, setSpeaking] = useState(false);
-	const [male, setMale] = useState(false);
 
-	const [voiceNow, setVoiceNow] = useState("en-us-x-iob-local");
-
-	const [imageurl, setImageurl] = useState({
-		static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png",
-		animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif",
-	});
+	const [voiceState, setVoice] = useState(voices.female);
 
 	const mutation = useMutation({
 		onError: (error) => Toast.show(error.message, { duration: 5000 }),
 		mutationFn: async (mes: Message[]) => {
-			const body = [
+			const body: Message[] = [
 				{
 					role: "system",
-					content: `Suppose you are a person for me to practice speaking English. Make up your name that for a ${
-						male ? "male" : "female"
-					}!`,
+					content: `You are a AI, whose role is to help me practice speaking English. Your name is ${voiceState.name}.`,
 				},
 				...mes,
-			] as Message[];
+			];
 
-			const res = await api.post("/api/voice", JSON.stringify(body), {
-				headers: {
-					"Content-Type": "application/json",
-					"clerk-user-id": user!.id,
-				},
+			const res = await api.post("/api/user/voice", JSON.stringify(body), {
+				headers: { "Content-Type": "application/json", "clerk-user-id": user!.id },
 			});
-
-			if (res.status >= 400)
-				throw new Error("Status: " + res.status + " - " + res.statusText);
 
 			const { message } = res.data as { message: string };
 			setMessages([
@@ -81,7 +83,7 @@ export default function App() {
 		if (!content) return;
 
 		setMessages((prev) => {
-			const data = [...prev, { content, role: "user" } as const];
+			const data = [...prev, { role: "user", content }] satisfies Message[];
 			mutation.mutate(data);
 
 			return data;
@@ -121,7 +123,7 @@ export default function App() {
 		const cleanedText = removePunctuation(text);
 
 		const options = {
-			voice: voiceNow,
+			voice: voiceState.voice,
 			quality: "Enhanced",
 			language,
 			rate: 0.85,
@@ -142,27 +144,19 @@ export default function App() {
 		setRecording(false);
 	};
 
-	const setGender = () => {
-		if (male) {
-			setImageurl({
-				static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.png",
-				animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Sofia.gif",
-			});
+	const toggleGender = () => {
+		const newVoice = voiceState.name === voices.male.name ? voices.female : voices.male;
+		const updatedMessage = messages.map((message) => {
+			if (message.role === "user") return message;
 
-			setVoiceNow("en-us-x-iob-local");
-			setMale(false);
-		} else {
-			setImageurl({
-				static: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.png",
-				animate: "https://ik.imagekit.io/RikOnly21/learnifyAI/Deni.gif",
-			});
+			const updatedContent = message.content.replaceAll(voiceState.name, newVoice.name);
+			return { role: message.role, content: updatedContent };
+		});
 
-			setVoiceNow("en-us-x-iol-local");
-			setMale(true);
-		}
+		setVoice(newVoice);
+		setMessages(updatedMessage);
 	};
 
-	//
 	const speechStartHandler = () => {
 		console.log("speech start handler");
 	};
@@ -180,9 +174,11 @@ export default function App() {
 
 	const startRecording = async () => {
 		setRecording(true);
+		if (speaking) stopSpeaking();
 
 		const success = await requestMicrophonePermission();
 		if (!success) return;
+
 		try {
 			await Voice.start("en-US");
 		} catch (error) {
@@ -201,7 +197,7 @@ export default function App() {
 		}
 	};
 
-	const clear = () => {
+	const clearHistory = () => {
 		setMessages([]);
 	};
 
@@ -226,77 +222,108 @@ export default function App() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.headerTitle}>LearnifyAI</Text>
-				{recording && <Text style={styles.headerSubtitle}> Đang lắng nghe...</Text>}
+				<Text style={styles.headerTitle}>Nói chuyện cùng {voiceState.name}</Text>
 			</View>
 
-			{speaking ? (
-				<Gif
-					source={{ uri: imageurl.animate }}
-					style={{ width: 200, height: 200, alignSelf: "center" }}
-				/>
-			) : (
-				<Image
-					source={{ uri: imageurl.static }}
-					style={{ width: 200, height: 200, alignSelf: "center" }}
-				/>
-			)}
+			<View>
+				{speaking ? (
+					<Gif
+						source={{ uri: voiceState.animate }}
+						style={{ width: 200, height: 200, alignSelf: "center" }}
+					/>
+				) : (
+					<Image
+						source={{ uri: voiceState.static }}
+						style={{ width: 200, height: 200, alignSelf: "center" }}
+					/>
+				)}
+			</View>
 
 			<ScrollView style={styles.messagesContainer}>
 				{messages.map((message, index) => (
-					<View
+					<Message
 						key={index}
-						style={
-							message.role === "assistant"
-								? styles.messageBubbleAI
-								: styles.messageBubbleUser
-						}
-					>
-						<Text>{message.content}</Text>
-						{message.role === "assistant" && (
-							<TouchableOpacity
-								style={styles.iconButton}
-								onPress={() =>
-									speaking ? stopSpeaking() : speak(message.content, "en-us")
-								}
-							>
-								<Image
-									source={require("@/assets/images/speaker.png")}
-									style={{ width: 20, height: 20 }}
-								/>
-							</TouchableOpacity>
-						)}
-					</View>
+						message={message}
+						speaking={speaking}
+						stopSpeaking={stopSpeaking}
+						speak={speak}
+					/>
 				))}
 			</ScrollView>
-			<LinearGradient style={styles.inputContainer} colors={["#e0f7fa", "#b2ebf2"]}>
-				<TouchableOpacity style={styles.iconButton} onPress={setGender}>
-					<Ionicons name="swap-horizontal-sharp" size={24} color="#00796b"></Ionicons>
+
+			<View className="flex-row justify-evenly border-t border-gray-300 py-2">
+				<TouchableOpacity style={styles.iconButton} onPress={toggleGender}>
+					<Ionicons name="swap-horizontal-sharp" size={24} color="#00796b" />
+					<Text style={styles.iconText}>Đổi giới tính</Text>
 				</TouchableOpacity>
 
 				{recording ? (
 					<TouchableOpacity style={styles.iconButton} onPress={stopRecording}>
-						<Ionicons name="mic" size={24} color="#0288d1"></Ionicons>
+						<Ionicons name="mic" size={24} color="#0288d1" />
+						<Text style={styles.iconText}>Đang lắng nghe...</Text>
 					</TouchableOpacity>
 				) : (
 					<TouchableOpacity style={styles.iconButton} onPress={startRecording}>
-						<Ionicons name="mic-off" size={24} color="#0288d1"></Ionicons>
+						<Ionicons name="mic-off" size={24} color="#0288d1" />
+						<Text style={styles.iconText}>Nói chuyện</Text>
 					</TouchableOpacity>
 				)}
 
-				{messages.length > 0 && (
-					<TouchableOpacity onPress={clear} style={styles.iconButton}>
-						<Ionicons name="trash-bin" size={24} color="#d32f2f"></Ionicons>
-					</TouchableOpacity>
-				)}
-			</LinearGradient>
+				<TouchableOpacity
+					onPress={clearHistory}
+					style={[styles.iconButton, { opacity: messages.length === 0 ? 0.5 : 1 }]}
+					disabled={messages.length === 0}
+				>
+					<Ionicons name="trash-bin" size={24} color="#d32f2f" />
+					<Text style={styles.iconText}>Xóa lịch sử</Text>
+				</TouchableOpacity>
+			</View>
 		</View>
 	);
 }
 
+const Message = ({
+	message,
+	speaking,
+	stopSpeaking,
+	speak,
+}: {
+	message: Message;
+	speaking: boolean;
+	stopSpeaking: () => void;
+	speak: (text: string, language: string) => void;
+}) => {
+	return (
+		<View
+			style={[
+				styles.messageBubble,
+				message.role === "assistant" ? styles.messageBubbleAI : styles.messageBubbleUser,
+			]}
+		>
+			{message.role === "assistant" && (
+				<TouchableOpacity
+					onPress={() => {
+						if (speaking) stopSpeaking();
+						speak(message.content, "en-us");
+					}}
+				>
+					<Ionicons name="volume-high" size={20} color="black" />
+				</TouchableOpacity>
+			)}
+
+			<Text
+				className={`${message.role === "assistant" ? "text-black" : "text-white"} max-w-[90%]`}
+			>
+				{message.content}
+			</Text>
+		</View>
+	);
+};
+
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+		gap: 8,
 		backgroundColor: "#f8f8f8",
 	},
 	header: {
@@ -306,20 +333,15 @@ const styles = StyleSheet.create({
 		backgroundColor: "#ffffff",
 		elevation: 2,
 	},
-	headerTitleContainer: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
+	headerTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		color: "#000000",
 	},
 	avatar: {
 		width: 24,
 		height: 24,
 		marginRight: 10,
-	},
-	headerTitle: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#000000",
 	},
 	headerSubtitle: {
 		fontSize: 12,
@@ -329,23 +351,31 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 10,
 	},
-	messageBubbleAI: {
-		alignSelf: "flex-start",
-		backgroundColor: "#B3E5FC",
-		padding: 10,
-		borderRadius: 20,
+	messageBubble: {
+		paddingHorizontal: 15,
+		paddingVertical: 10,
+		borderRadius: 8,
 		marginBottom: 10,
 		maxWidth: "80%",
+		minHeight: 40,
+		gap: 8,
+		flexDirection: "row",
+		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { height: 2, width: 0 },
+		shadowOpacity: 0.8,
+		shadowRadius: 2,
+		elevation: 3,
+	},
+	messageBubbleAI: {
+		alignSelf: "flex-start",
 		marginLeft: 10,
+		backgroundColor: "#d1d5db",
 	},
 	messageBubbleUser: {
 		alignSelf: "flex-end",
-		backgroundColor: "#E0F2F1",
-		padding: 10,
-		borderRadius: 20,
-		marginBottom: 10,
-		maxWidth: "80%",
 		marginRight: 10,
+		backgroundColor: "#3b82f6",
 	},
 	messageText: {
 		fontSize: 16,
@@ -360,13 +390,10 @@ const styles = StyleSheet.create({
 		borderColor: "#ddd",
 	},
 	iconButton: {
-		padding: 10,
-		borderRadius: 30,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	iconImage: {
-		width: 50,
-		height: 50,
+	iconText: {
+		fontSize: 12,
 	},
 });

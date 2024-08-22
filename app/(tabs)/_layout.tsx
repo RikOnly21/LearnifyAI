@@ -9,8 +9,9 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
-	const { isSignedIn } = useAuth();
+	const { isSignedIn, isLoaded } = useAuth();
 
+	if (!isLoaded) return null;
 	if (!isSignedIn) return <Redirect href="/" />;
 
 	return (
@@ -50,12 +51,32 @@ export default function TabLayout() {
 			/>
 
 			<Tabs.Screen
+				name="listen"
+				options={{
+					title: "Listen",
+					tabBarIcon: ({ color, focused }) => (
+						<TabBarIcon name={focused ? "headset" : "headset-outline"} color={color} />
+					),
+				}}
+			/>
+
+			<Tabs.Screen
+				name="fix"
+				options={{
+					title: "Fix",
+					tabBarIcon: ({ color, focused }) => (
+						<TabBarIcon name={focused ? "build" : "build-outline"} color={color} />
+					),
+				}}
+			/>
+
+			<Tabs.Screen
 				name="setting"
 				options={{
 					title: "Setting",
 					tabBarIcon: ({ color, focused }) => (
 						<TabBarIcon
-							name={focused ? "settings" : "settings-outline"}
+							name={focused ? "person-circle" : "person-circle-outline"}
 							color={color}
 						/>
 					),
